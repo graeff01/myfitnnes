@@ -197,7 +197,6 @@ function App() {
               transition={{ duration: 0.2 }}
               className="flex-1 flex flex-col justify-between p-4 overflow-hidden"
             >
-              <Header title="MyFit" subtitle="Sua jornada diária" />
 
               <ActivityRings
                 weeklyProgress={stats.weeklyPct}
@@ -225,7 +224,6 @@ function App() {
               transition={{ duration: 0.2 }}
               className="flex-1 flex flex-col overflow-hidden p-4"
             >
-              <Header title="Seus Treinos" subtitle="Gerencie sua rotina" />
               <div className="flex-1 overflow-hidden mt-2">
                 <WorkoutSection
                   workouts={workouts}
@@ -258,7 +256,6 @@ function App() {
               transition={{ duration: 0.2 }}
               className="flex-1 flex flex-col overflow-hidden p-4"
             >
-              <Header title="Seu Progresso" subtitle="Acompanhe sua evolução" />
               <div className="flex-1 overflow-hidden mt-2">
                 <ProgressView />
               </div>

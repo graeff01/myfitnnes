@@ -15,39 +15,49 @@ const HydrationCard = () => {
         try {
             const date = api.formatDate();
             const data = await api.getHydration(date);
-            setVolume(data.volume_ml || 0);
-            setGoal(data.goal_ml || 2500);
+            if (data) {
+                setVolume(data.volume);
+                setGoal(data.goal || 2500);
+            } else {
+                // Initialize if no entries for today
+                setVolume(0);
+            }
         } catch (error) {
             console.error('Error loading hydration:', error);
         }
     };
 
     const updateVolume = async (amount) => {
-        const newVolume = Math.max(0, volume + amount);
-
-        // Optimistic update
-        setVolume(newVolume);
-
-        // Haptic feedback
-        if (navigator.vibrate) {
-            navigator.vibrate(20);
-        }
-
         try {
-            await api.updateHydration(newVolume, goal);
+            const newVolume = Math.max(0, volume + amount);
+            const date = api.formatDate();
+            await api.logHydration({
+                date,
+                volume: newVolume,
+                goal
+            });
+            setVolume(newVolume);
+
+            if (newVolume >= goal && volume < goal) {
+                // Celebration effect?
+            }
         } catch (error) {
             console.error('Error updating hydration:', error);
-            loadHydration(); // Revert
         }
     };
 
     const handleGoalChange = async (newGoal) => {
-        setGoal(newGoal);
-        setShowGoalInput(false);
         try {
-            await api.updateHydration(volume, newGoal);
+            const date = api.formatDate();
+            await api.logHydration({
+                date,
+                volume,
+                goal: parseInt(newGoal)
+            });
+            setGoal(parseInt(newGoal));
+            setShowGoalInput(false);
         } catch (error) {
-            console.error('Error updating hydration goal:', error);
+            console.error('Error updating goal:', error);
         }
     };
 
@@ -62,48 +72,71 @@ const HydrationCard = () => {
                 </div>
                 <button
                     onClick={() => setShowGoalInput(true)}
-                    className="text-sm font-medium text-blue-200 hover:text-white transition-colors flex items-center gap-1 bg-blue-500/10 px-3 py-1 rounded-full"
+                    className="text-text-secondary text-sm hover:text-white transition-colors"
                 >
                     {volume} / {goal} ml ✏️
                 </button>
             </div>
 
-            {showGoalInput && (
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="absolute inset-0 bg-surface z-20 flex items-center justify-center p-4"
-                >
-                    <div className="w-full flex gap-2">
-                        <input
-                            type="number"
-                            value={goal}
-                            onChange={(e) => setGoal(parseInt(e.target.value) || 0)}
-                            className="flex-1 bg-surface-light rounded-xl px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="Meta em ml"
-                        />
-                        <button
-                            onClick={() => handleGoalChange(goal)}
-                            className="bg-blue-500 text-white px-4 py-2 rounded-xl font-bold"
+            <AnimatePresence>
+                {showGoalInput && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-center justify-center p-6"
+                        onClick={() => setShowGoalInput(false)}
+                    >
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                            className="bg-surface border border-white/10 p-6 rounded-3xl w-full max-w-xs shadow-2xl relative z-[101]"
+                            onClick={(e) => e.stopPropagation()}
                         >
-                            Salvar
-                        </button>
-                    </div>
-                </motion.div>
-            )}
+                            <h3 className="text-white font-bold mb-4 text-center">Definir Meta Diária</h3>
+                            <div className="flex flex-col gap-4">
+                                <input
+                                    type="number"
+                                    value={goal}
+                                    onChange={(e) => setGoal(e.target.value)}
+                                    className="bg-background border border-white/10 rounded-xl px-4 py-3 text-white text-center text-2xl font-bold focus:outline-none focus:border-blue-500 transition-colors"
+                                    placeholder="Ex: 2500"
+                                    autoFocus
+                                />
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => setShowGoalInput(false)}
+                                        className="flex-1 bg-surface-light text-text-secondary px-4 py-3 rounded-xl font-bold"
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        onClick={() => handleGoalChange(goal)}
+                                        className="flex-1 bg-blue-500 text-white px-4 py-3 rounded-xl font-bold shadow-lg shadow-blue-500/20"
+                                    >
+                                        Salvar
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Progress Bar Container */}
             <div className="h-4 bg-blue-900/30 rounded-full overflow-hidden mb-3 relative z-10">
                 <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${percentage}%` }}
-                    transition={{ type: "spring", stiffness: 50, damping: 15 }}
-                    className="h-full bg-gradient-to-r from-blue-500 to-cyan-400"
-                />
+                    className="h-full bg-gradient-to-r from-blue-600 to-blue-400 relative"
+                >
+                    <div className="absolute inset-0 bg-white/20 animate-pulse" />
+                </motion.div>
             </div>
 
-            {/* Quick Add Buttons */}
-            <div className="grid grid-cols-4 gap-3 relative z-10">
+            {/* Quick Actions */}
+            <div className="grid grid-cols-3 gap-2 relative z-10">
                 {[200, 300, 500].map((amount) => (
                     <motion.button
                         key={amount}
@@ -115,36 +148,28 @@ const HydrationCard = () => {
                         <span className="text-[10px] opacity-70">ml</span>
                     </motion.button>
                 ))}
+            </div>
+
+            <div className="mt-2 flex gap-2 relative z-10">
                 <motion.button
                     whileTap={{ scale: 0.95 }}
                     onClick={() => updateVolume(-200)}
-                    className="py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-200 text-sm font-bold flex items-center justify-center border border-red-500/10 transition-colors"
+                    className="py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-200 text-sm font-bold flex-1 flex items-center justify-center border border-red-500/10 transition-colors"
                 >
-                    <span>-200</span>
+                    <span>-200ml</span>
                 </motion.button>
             </div>
 
-            {/* Decorative Background Liquid */}
-            <motion.div
-                className="absolute bottom-0 left-0 right-0 bg-blue-500/5 blur-2xl"
-                style={{ height: `${percentage}%` }}
-                animate={{ height: `${percentage}%` }}
-                transition={{ duration: 1 }}
-            />
-
-            {/* Celebration */}
-            <AnimatePresence>
-                {volume >= goal && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0 }}
-                        className="mt-4 text-center text-sm font-bold text-cyan-300 relative z-10"
-                    >
-                        🎉 Meta diária batida! Continue assim!
-                    </motion.div>
-                )}
-            </AnimatePresence>
+            {/* Achievement text */}
+            {percentage >= 100 && (
+                <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="absolute bottom-0 left-0 right-0 bg-blue-500 text-white text-[10px] font-bold text-center py-0.5 tracking-wider uppercase"
+                >
+                    🎉 Meta diária batida!
+                </motion.div>
+            )}
         </div>
     );
 };
