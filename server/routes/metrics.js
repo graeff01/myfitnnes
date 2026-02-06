@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { allAsync, getAsync, runAsync } = require('../db/database');
+const { allAsync, getAsync, runAsync } = require('../config/database');
 
 // ============================================
 // WEIGHT TRACKING ROUTES
