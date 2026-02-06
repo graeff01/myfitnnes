@@ -28,7 +28,7 @@ function App() {
     try {
       setLoading(true);
       const [workoutsData, statsData] = await Promise.all([
-        api.getAllWorkouts(),
+        api.getWorkouts(),
         api.getWeeklyStats()
       ]);
       setWorkouts(workoutsData);
