@@ -1,0 +1,184 @@
+@import "tailwindcss";
+
+@theme {
+  /* Colors */
+  --color-primary: #FA114F;
+  --color-secondary: #92E82A;
+  --color-tertiary: #00D9FF;
+
+  --color-perna: #FA114F;
+  --color-peito: #FF6B35;
+  --color-costas: #92E82A;
+  --color-ombro: #00D9FF;
+  --color-braco: #BF5AF2;
+  --color-cardio: #FFD60A;
+
+  --color-background: #000000;
+  --color-surface: #1C1C1E;
+  --color-surface-light: #2C2C2E;
+  --color-text-primary: #FFFFFF;
+  --color-text-secondary: #98989D;
+
+  /* Animations */
+  --animate-ring-fill: ring-fill 1s ease-out forwards;
+  --animate-scale-in: scale-in 0.2s ease-out;
+  --animate-fade-in: fade-in 0.3s ease-out;
+}
+
+@layer base {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overscroll-behavior: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  #root {
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+  }
+
+  /* Safe area insets for notched devices */
+  @supports (padding: env(safe-area-inset-top)) {
+    body {
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+  }
+}
+
+@layer components {
+
+  /* Muscle group button base styles */
+  .muscle-btn {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 1.5rem;
+    border-radius: 1.5rem;
+    color: white;
+    font-weight: 600;
+    font-size: 1.125rem;
+    transition: all 0.2s;
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+    min-height: 120px;
+    min-width: 160px;
+  }
+
+  .muscle-btn:active {
+    transform: scale(0.95);
+  }
+
+  /* Activity ring styles */
+  .activity-ring {
+    transition: all 1s ease-out;
+  }
+
+  /* Card styles */
+  .card {
+    background-color: var(--color-surface);
+    border-radius: 1.5rem;
+    padding: 1.5rem;
+    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+  }
+
+  /* Tab button */
+  .tab-btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 9999px;
+    font-weight: 500;
+    transition: all 0.2s;
+    color: var(--color-text-secondary);
+  }
+
+  .tab-btn.active {
+    background-color: var(--color-surface);
+    color: var(--color-text-primary);
+  }
+
+  /* Day indicator */
+  .day-indicator {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.875rem;
+    transition: all 0.2s;
+  }
+
+  .day-indicator.active {
+    background-color: var(--color-surface);
+    transform: scale(1.1);
+  }
+
+  .day-indicator.trained {
+    ring-width: 2px;
+    ring-offset-width: 2px;
+    ring-offset-color: var(--color-background);
+  }
+}
+
+@layer utilities {
+
+  /* Hide scrollbar but keep functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Smooth scroll */
+  .smooth-scroll {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@keyframes ring-fill {
+  0% {
+    stroke-dashoffset: 100;
+  }
+
+  100% {
+    stroke-dashoffset: var(--dash-offset);
+  }
+}
+
+@keyframes scale-in {
+  0% {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}

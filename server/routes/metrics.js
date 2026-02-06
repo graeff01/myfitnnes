@@ -1,0 +1,188 @@
+const express = require('express');
+const router = express.Router();
+const { allAsync, getAsync, runAsync } = require('../db/database');
+
+// ============================================
+// WEIGHT TRACKING ROUTES
+// ============================================
+
+// Get all weight logs
+router.get('/weight', async (req, res) => {
+    try {
+        const { startDate, endDate, limit } = req.query;
+
+        let query = 'SELECT * FROM weight_logs';
+        const params = [];
+
+        if (startDate && endDate) {
+            query += ' WHERE date BETWEEN ? AND ?';
+            params.push(startDate, endDate);
+        } else if (startDate) {
+            query += ' WHERE date >= ?';
+            params.push(startDate);
+        }
+
+        query += ' ORDER BY date DESC';
+
+        if (limit) {
+            query += ' LIMIT ?';
+            params.push(parseInt(limit));
+        }
+
+        const logs = await allAsync(query, params);
+        res.json(logs);
+    } catch (error) {
+        console.error('Error fetching weight logs:', error);
+        res.status(500).json({ error: 'Failed to fetch weight logs' });
+    }
+});
+
+// Log weight
+router.post('/weight', async (req, res) => {
+    try {
+        const { date, weight, notes } = req.body;
+
+        if (!date || !weight) {
+            return res.status(400).json({ error: 'Date and weight are required' });
+        }
+
+        if (weight <= 0 || weight > 500) {
+            return res.status(400).json({ error: 'Invalid weight value' });
+        }
+
+        // Check if entry exists for this date
+        const existing = await getAsync('SELECT id FROM weight_logs WHERE date = ?', [date]);
+
+        if (existing) {
+            // Update existing
+            await runAsync('UPDATE weight_logs SET weight = ?, notes = ? WHERE date = ?', [weight, notes || null, date]);
+            const updated = await getAsync('SELECT * FROM weight_logs WHERE date = ?', [date]);
+            res.json(updated);
+        } else {
+            // Insert new
+            const result = await runAsync(
+                'INSERT INTO weight_logs (date, weight, notes) VALUES (?, ?, ?)',
+                [date, weight, notes || null]
+            );
+            const log = await getAsync('SELECT * FROM weight_logs WHERE id = ?', [result.lastID]);
+            res.status(201).json(log);
+        }
+    } catch (error) {
+        console.error('Error logging weight:', error);
+        res.status(500).json({ error: 'Failed to log weight' });
+    }
+});
+
+// Delete weight log
+router.delete('/weight/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const result = await runAsync('DELETE FROM weight_logs WHERE id = ?', [id]);
+
+        if (result.changes === 0) {
+            return res.status(404).json({ error: 'Weight log not found' });
+        }
+
+        res.json({ message: 'Weight log deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting weight log:', error);
+        res.status(500).json({ error: 'Failed to delete weight log' });
+    }
+});
+
+// ============================================
+// MEASUREMENTS ROUTES
+// ============================================
+
+// Get all measurements
+router.get('/measurements', async (req, res) => {
+    try {
+        const { startDate, endDate, limit } = req.query;
+
+        let query = 'SELECT * FROM measurements';
+        const params = [];
+
+        if (startDate && endDate) {
+            query += ' WHERE date BETWEEN ? AND ?';
+            params.push(startDate, endDate);
+        } else if (startDate) {
+            query += ' WHERE date >= ?';
+            params.push(startDate);
+        }
+
+        query += ' ORDER BY date DESC';
+
+        if (limit) {
+            query += ' LIMIT ?';
+            params.push(parseInt(limit));
+        }
+
+        const measurements = await allAsync(query, params);
+        res.json(measurements);
+    } catch (error) {
+        console.error('Error fetching measurements:', error);
+        res.status(500).json({ error: 'Failed to fetch measurements' });
+    }
+});
+
+// Log measurements
+router.post('/measurements', async (req, res) => {
+    try {
+        const { date, chest, waist, hips, left_arm, right_arm, left_thigh, right_thigh, left_calf, right_calf, notes } = req.body;
+
+        if (!date) {
+            return res.status(400).json({ error: 'Date is required' });
+        }
+
+        // Check if entry exists for this date
+        const existing = await getAsync('SELECT id FROM measurements WHERE date = ?', [date]);
+
+        if (existing) {
+            // Update existing
+            await runAsync(`
+        UPDATE measurements 
+        SET chest = ?, waist = ?, hips = ?, 
+            left_arm = ?, right_arm = ?, 
+            left_thigh = ?, right_thigh = ?,
+            left_calf = ?, right_calf = ?,
+            notes = ?
+        WHERE date = ?
+      `, [chest, waist, hips, left_arm, right_arm, left_thigh, right_thigh, left_calf, right_calf, notes || null, date]);
+
+            const updated = await getAsync('SELECT * FROM measurements WHERE date = ?', [date]);
+            res.json(updated);
+        } else {
+            // Insert new
+            const result = await runAsync(`
+        INSERT INTO measurements 
+        (date, chest, waist, hips, left_arm, right_arm, left_thigh, right_thigh, left_calf, right_calf, notes)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `, [date, chest, waist, hips, left_arm, right_arm, left_thigh, right_thigh, left_calf, right_calf, notes || null]);
+
+            const measurement = await getAsync('SELECT * FROM measurements WHERE id = ?', [result.lastID]);
+            res.status(201).json(measurement);
+        }
+    } catch (error) {
+        console.error('Error logging measurements:', error);
+        res.status(500).json({ error: 'Failed to log measurements' });
+    }
+});
+
+// Delete measurement
+router.delete('/measurements/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const result = await runAsync('DELETE FROM measurements WHERE id = ?', [id]);
+
+        if (result.changes === 0) {
+            return res.status(404).json({ error: 'Measurement not found' });
+        }
+
+        res.json({ message: 'Measurement deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting measurement:', error);
+        res.status(500).json({ error: 'Failed to delete measurement' });
+    }
+});
+
+module.exports = router;
