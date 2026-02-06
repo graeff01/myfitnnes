@@ -6,6 +6,7 @@ import * as api from './services/api';
 import Header from './components/Header';
 import ActivityRings from './components/ActivityRings';
 import HydrationCard from './components/HydrationCard';
+import StatsCard from './components/StatsCard'; // Added
 import WorkoutModal from './components/WorkoutModal';
 import BottomNav from './components/BottomNav';
 import WorkoutSection from './components/WorkoutSection';
@@ -21,14 +22,14 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // User Settings (could be fetched from API)
-  const weeklyGoal = 4; // Days per week
+  // User Settings
+  const weeklyGoal = 4;
 
   const loadData = async () => {
     try {
       setLoading(true);
       const [workoutsData, statsData] = await Promise.all([
-        api.getWorkouts(),
+        api.getWorkouts(), // Fixed API name
         api.getWeeklyStats()
       ]);
       setWorkouts(workoutsData);
@@ -47,24 +48,19 @@ function App() {
 
   // --- Statistics Calculation ---
   const stats = useMemo(() => {
-    if (!workouts.length) return { weekly: 0, monthly: 0, streak: 0 };
+    if (!workouts.length) return { weeklyPct: 0, monthlyPct: 0, streak: 0, weeklyCount: 0, mostTrained: null };
 
     const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const today = now.toISOString().split('T')[0];
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
 
     // 1. Weekly Progress
-    // Find start of week (Sunday)
-    const startOfWeek = new Date(today);
-    startOfWeek.setDate(today.getDate() - today.getDay());
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay()); // Start Sunday
+    startOfWeek.setHours(0, 0, 0, 0);
 
-    const workoutsThisWeek = workouts.filter(w => {
-      const wDate = new Date(w.date + 'T00:00:00');
-      return wDate >= startOfWeek;
-    }).length; // This counts distinct WORKOUTS. If multiple per day? 
-    // Usually 1 per day is the goal logic. 
-    // Filter unique dates for the week
+    // Unique days trained this week
     const uniqueDaysWeek = new Set(workouts
       .filter(w => {
         const wDate = new Date(w.date + 'T00:00:00');
@@ -73,10 +69,9 @@ function App() {
       .map(w => w.date)
     ).size;
 
-    const weeklyProgress = Math.min((uniqueDaysWeek / weeklyGoal) * 100, 100);
+    const weeklyProgressPct = Math.min((uniqueDaysWeek / weeklyGoal) * 100, 100);
 
-    // 2. Monthly Progress (Arbitrary goal: 12 days?) or just consistency?
-    // Let's assume goal is roughly weeklyGoal * 4
+    // 2. Monthly Progress
     const monthlyGoal = weeklyGoal * 4;
     const uniqueDaysMonth = new Set(workouts
       .filter(w => {
@@ -86,41 +81,33 @@ function App() {
       .map(w => w.date)
     ).size;
 
-    const monthlyProgress = Math.min((uniqueDaysMonth / monthlyGoal) * 100, 100);
+    const monthlyProgressPct = Math.min((uniqueDaysMonth / monthlyGoal) * 100, 100);
 
     // 3. Streak
     let streak = 0;
     const sortedDates = [...new Set(workouts.map(w => w.date))].sort((a, b) => new Date(b) - new Date(a));
 
-    // Check if trained today
-    const trainedToday = sortedDates.includes(today.toISOString().split('T')[0]);
-    let checkDate = new Date(today);
-
-    // If not trained today, checking from yesterday for streak? 
-    // Usually streak allows missing current day until it ends. 
-    // Let's strictly count consecutive days backward from most recent workout logic?
-    // User logic: "Streak" usually implies continuous.
-    // If I didn't train today, streak might be 0? 
-    // Or streak is "current active streak".
-
-    // Simple logic:
     if (sortedDates.length > 0) {
-      let currentString = sortedDates[0];
-      let currentDate = new Date(currentString + 'T00:00:00');
+      let currentDate = new Date(sortedDates[0] + 'T00:00:00');
+      const nowObj = new Date(today + 'T00:00:00');
+      const diffHours = (nowObj - currentDate) / (1000 * 60 * 60);
 
-      // Difference between today and last workout
-      const diffHours = (today - currentDate) / (1000 * 60 * 60);
-
-      if (diffHours < 48) { // If last workout was today or yesterday
+      // If last workout was today or yesterday, streak is active
+      if (diffHours < 48) {
         streak = 1;
         let previousDate = new Date(currentDate);
         previousDate.setDate(previousDate.getDate() - 1);
 
+        // Check backwards
         for (let i = 1; i < sortedDates.length; i++) {
-          const d = new Date(sortedDates[i] + 'T00:00:00');
-          if (d.getTime() === previousDate.getTime()) {
+          const dStr = sortedDates[i];
+          const pStr = previousDate.toISOString().split('T')[0];
+
+          if (dStr === pStr) {
             streak++;
             previousDate.setDate(previousDate.getDate() - 1);
+          } else if (dStr > pStr) {
+            continue; // Should not happen with sorted set
           } else {
             break;
           }
@@ -128,7 +115,25 @@ function App() {
       }
     }
 
-    return { weekly: weeklyProgress, monthly: monthlyProgress, streak };
+    // 4. Most Trained (Month)
+    const muscleMap = {};
+    workouts.filter(w => {
+      const wDate = new Date(w.date + 'T00:00:00');
+      return wDate.getMonth() === currentMonth && wDate.getFullYear() === currentYear;
+    }).forEach(w => {
+      w.muscle_groups.split(',').forEach(g => {
+        muscleMap[g] = (muscleMap[g] || 0) + 1;
+      });
+    });
+    const mostTrained = Object.entries(muscleMap).sort((a, b) => b[1] - a[1])[0]?.[0];
+
+    return {
+      weeklyPct: weeklyProgressPct,
+      monthlyPct: monthlyProgressPct,
+      streak,
+      weeklyCount: uniqueDaysWeek,
+      mostTrained
+    };
   }, [workouts]);
 
 
@@ -193,11 +198,20 @@ function App() {
               className="space-y-6"
             >
               <Header title="MyFit" subtitle="Sua jornada diária" />
+
               <ActivityRings
-                weeklyProgress={stats.weekly}
-                monthlyProgress={stats.monthly}
+                weeklyProgress={stats.weeklyPct}
+                monthlyProgress={stats.monthlyPct}
                 streak={stats.streak}
               />
+
+              <StatsCard
+                streak={stats.streak}
+                weeklyGoal={weeklyGoal}
+                weeklyProgress={stats.weeklyCount}
+                monthlyStats={{ most_trained: stats.mostTrained }}
+              />
+
               <HydrationCard />
             </motion.div>
           )}
@@ -220,7 +234,6 @@ function App() {
                 />
               </div>
 
-              {/* Floating Action Button for Adding Workout */}
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
