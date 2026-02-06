@@ -195,7 +195,7 @@ function App() {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.2 }}
-              className="flex-1 flex flex-col justify-between p-4 overflow-hidden"
+              className="flex-1 flex flex-col justify-start gap-4 p-4 overflow-hidden"
             >
 
               <ActivityRings
