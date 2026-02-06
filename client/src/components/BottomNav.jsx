@@ -10,7 +10,7 @@ export default function BottomNav({ activeTab, setActiveTab }) {
     ];
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-6 pt-2">
+        <div className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-3 pt-2">
             <div className="bg-surface/80 backdrop-blur-xl border border-white/5 rounded-2xl shadow-xl flex justify-around items-center p-2 max-w-md mx-auto">
                 {navItems.map((item) => {
                     const Icon = item.icon;

@@ -73,7 +73,7 @@ const ProgressView = () => {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="flex-1 overflow-y-auto scrollbar-hide space-y-6 pb-32">
             {/* Header with action buttons */}
             <div className="card">
                 <h2 className="text-2xl font-bold mb-4">📈 Progresso</h2>

@@ -12,17 +12,17 @@ const StatsCard = ({ monthlyStats, streak, weeklyGoal, weeklyProgress }) => {
     const goalMet = weeklyProgress >= weeklyGoal;
 
     return (
-        <div className="card">
-            <h3 className="text-lg font-semibold mb-4">📊 Estatísticas</h3>
+        <div className="bg-surface/50 border border-white/5 rounded-2xl p-3 shadow-inner">
+            <h3 className="text-xs font-bold text-text-secondary uppercase tracking-widest mb-2">Estatísticas</h3>
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-3 gap-2">
                 {/* Streak */}
                 <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     className="text-center"
                 >
-                    <div className="text-3xl font-bold text-tertiary mb-1">
+                    <div className="text-2xl font-bold text-tertiary mb-0.5">
                         {streak >= 7 ? '🔥' : '⚡'} {streak}
                     </div>
                     <div className="text-xs text-text-secondary">
@@ -37,7 +37,7 @@ const StatsCard = ({ monthlyStats, streak, weeklyGoal, weeklyProgress }) => {
                     transition={{ delay: 0.1 }}
                     className="text-center"
                 >
-                    <div className="text-3xl mb-1">
+                    <div className="text-2xl mb-0.5">
                         {mostTrainedGroup ? mostTrainedGroup.label.split(' ')[0] : '💪'}
                     </div>
                     <div className="text-xs text-text-secondary">
@@ -52,7 +52,7 @@ const StatsCard = ({ monthlyStats, streak, weeklyGoal, weeklyProgress }) => {
                     transition={{ delay: 0.2 }}
                     className="text-center"
                 >
-                    <div className={`text-3xl font-bold mb-1 ${goalMet ? 'text-secondary' : 'text-text-primary'}`}>
+                    <div className={`text-2xl font-bold mb-0.5 ${goalMet ? 'text-secondary' : 'text-text-primary'}`}>
                         {goalMet ? '✅' : '🎯'} {weeklyProgress}/{weeklyGoal}
                     </div>
                     <div className="text-xs text-text-secondary">
@@ -62,7 +62,7 @@ const StatsCard = ({ monthlyStats, streak, weeklyGoal, weeklyProgress }) => {
             </div>
 
             {/* Goal progress bar */}
-            <div className="mt-4">
+            <div className="mt-2">
                 <div className="h-2 bg-surface-light rounded-full overflow-hidden">
                     <motion.div
                         initial={{ width: 0 }}

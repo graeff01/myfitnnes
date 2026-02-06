@@ -18,7 +18,7 @@ export default function WorkoutSection({
         : [];
 
     return (
-        <div className="space-y-6 pb-24">
+        <div className="flex-1 flex flex-col overflow-hidden space-y-4">
             {/* Header / Tabs */}
             <div className="flex bg-surface-light p-1 rounded-xl">
                 {['week', 'month', 'list'].map((mode) => (
@@ -26,8 +26,8 @@ export default function WorkoutSection({
                         key={mode}
                         onClick={() => setViewMode(mode)}
                         className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${viewMode === mode
-                                ? 'bg-surface text-white shadow-lg'
-                                : 'text-text-secondary hover:text-white'
+                            ? 'bg-surface text-white shadow-lg'
+                            : 'text-text-secondary hover:text-white'
                             }`}
                     >
                         {mode === 'week' && 'Semana'}
@@ -37,44 +37,46 @@ export default function WorkoutSection({
                 ))}
             </div>
 
-            <AnimatePresence mode="wait">
-                {viewMode === 'week' && (
-                    <motion.div
-                        key="week"
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: 20 }}
-                    >
-                        <WeeklyView weeklyData={weeklyStats} onDayClick={setViewDate} />
-                    </motion.div>
-                )}
+            <div className="flex-1 overflow-y-auto scrollbar-hide">
+                <AnimatePresence mode="wait">
+                    {viewMode === 'week' && (
+                        <motion.div
+                            key="week"
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 20 }}
+                        >
+                            <WeeklyView weeklyData={weeklyStats} onDayClick={setViewDate} />
+                        </motion.div>
+                    )}
 
-                {viewMode === 'month' && (
-                    <motion.div
-                        key="month"
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: 20 }}
-                    >
-                        <MonthlyView workouts={workouts} onDayClick={setViewDate} />
-                    </motion.div>
-                )}
+                    {viewMode === 'month' && (
+                        <motion.div
+                            key="month"
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 20 }}
+                        >
+                            <MonthlyView workouts={workouts} onDayClick={setViewDate} />
+                        </motion.div>
+                    )}
 
-                {viewMode === 'list' && (
-                    <motion.div
-                        key="list"
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: 20 }}
-                    >
-                        <WorkoutHistory
-                            workouts={workouts}
-                            onEdit={onEditWorkout}
-                            onDelete={onDeleteWorkout}
-                        />
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                    {viewMode === 'list' && (
+                        <motion.div
+                            key="list"
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 20 }}
+                        >
+                            <WorkoutHistory
+                                workouts={workouts}
+                                onEdit={onEditWorkout}
+                                onDelete={onDeleteWorkout}
+                            />
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
 
             {/* Selected Day Details (for Week/Month views) */}
             {viewMode !== 'list' && viewDate && (

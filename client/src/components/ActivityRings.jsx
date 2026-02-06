@@ -1,8 +1,8 @@
 import { motion } from 'framer-motion';
 
 const ActivityRings = ({ weeklyProgress = 0, monthlyProgress = 0, streak = 0 }) => {
-    const ringSize = 200;
-    const strokeWidth = 16;
+    const ringSize = 175;
+    const strokeWidth = 14;
     const center = ringSize / 2;
 
     // Calculate ring radii
@@ -102,8 +102,8 @@ const ActivityRings = ({ weeklyProgress = 0, monthlyProgress = 0, streak = 0 }) 
                         transition={{ delay: 0.6 }}
                         className="text-center"
                     >
-                        <div className="text-4xl font-bold">{Math.round(monthlyProgress)}%</div>
-                        <div className="text-xs text-text-secondary mt-1">Este mês</div>
+                        <div className="text-3xl font-bold">{Math.round(monthlyProgress)}%</div>
+                        <div className="text-[10px] text-text-secondary mt-0.5">Este mês</div>
                     </motion.div>
                 </div>
             </div>

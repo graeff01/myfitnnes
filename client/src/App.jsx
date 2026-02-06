@@ -173,8 +173,8 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-24 px-4 pt-8">
-      <div className="max-w-md mx-auto relative min-h-[80vh]">
+    <div className="h-[100dvh] bg-background flex flex-col overflow-hidden">
+      <div className="max-w-md mx-auto relative w-full h-full flex flex-col overflow-hidden">
         <Toaster
           position="top-center"
           toastOptions={{
@@ -195,7 +195,7 @@ function App() {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.2 }}
-              className="space-y-6"
+              className="flex-1 flex flex-col justify-between p-4 overflow-hidden"
             >
               <Header title="MyFit" subtitle="Sua jornada diária" />
 
@@ -223,9 +223,10 @@ function App() {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.2 }}
+              className="flex-1 flex flex-col overflow-hidden p-4"
             >
               <Header title="Seus Treinos" subtitle="Gerencie sua rotina" />
-              <div className="mt-6">
+              <div className="flex-1 overflow-hidden mt-2">
                 <WorkoutSection
                   workouts={workouts}
                   weeklyStats={weeklyStats}
@@ -255,9 +256,10 @@ function App() {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.2 }}
+              className="flex-1 flex flex-col overflow-hidden p-4"
             >
               <Header title="Seu Progresso" subtitle="Acompanhe sua evolução" />
-              <div className="mt-6">
+              <div className="flex-1 overflow-hidden mt-2">
                 <ProgressView />
               </div>
             </motion.div>

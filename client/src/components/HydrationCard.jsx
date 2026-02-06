@@ -54,8 +54,8 @@ const HydrationCard = () => {
     const percentage = Math.min((volume / goal) * 100, 100);
 
     return (
-        <div className="card bg-gradient-to-br from-blue-900/30 to-surface border border-blue-500/20 overflow-hidden relative">
-            <div className="flex items-center justify-between mb-4 relative z-10">
+        <div className="bg-gradient-to-br from-blue-900/30 to-surface border border-blue-500/20 rounded-2xl p-4 overflow-hidden relative">
+            <div className="flex items-center justify-between mb-2 relative z-10">
                 <div className="flex items-center gap-2">
                     <span className="text-2xl">💧</span>
                     <h3 className="text-lg font-semibold text-blue-100">Hidratação</h3>
@@ -93,7 +93,7 @@ const HydrationCard = () => {
             )}
 
             {/* Progress Bar Container */}
-            <div className="h-4 bg-blue-900/30 rounded-full overflow-hidden mb-6 relative z-10">
+            <div className="h-4 bg-blue-900/30 rounded-full overflow-hidden mb-3 relative z-10">
                 <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${percentage}%` }}
@@ -109,7 +109,7 @@ const HydrationCard = () => {
                         key={amount}
                         whileTap={{ scale: 0.95 }}
                         onClick={() => updateVolume(amount)}
-                        className="py-3 rounded-xl bg-blue-500/20 hover:bg-blue-500/30 text-blue-100 text-sm font-bold flex flex-col items-center justify-center gap-0.5 border border-blue-500/10 transition-colors"
+                        className="py-2 rounded-xl bg-blue-500/20 hover:bg-blue-500/30 text-blue-100 text-sm font-bold flex flex-col items-center justify-center border border-blue-500/10 transition-colors"
                     >
                         <span>+{amount}</span>
                         <span className="text-[10px] opacity-70">ml</span>
@@ -118,7 +118,7 @@ const HydrationCard = () => {
                 <motion.button
                     whileTap={{ scale: 0.95 }}
                     onClick={() => updateVolume(-200)}
-                    className="py-3 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-200 text-sm font-bold flex items-center justify-center border border-red-500/10 transition-colors"
+                    className="py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-200 text-sm font-bold flex items-center justify-center border border-red-500/10 transition-colors"
                 >
                     <span>-200</span>
                 </motion.button>

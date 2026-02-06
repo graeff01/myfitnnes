@@ -2,7 +2,7 @@ import React from 'react';
 
 export default function Header({ title = "MyFit", subtitle = "Sua jornada diária" }) {
     return (
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-center mb-3">
             <div>
                 <h1 className="text-3xl font-black bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">
                     {title}
