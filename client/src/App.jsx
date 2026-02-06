@@ -1,413 +1,267 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import ActivityRings from './components/ActivityRings';
-import MuscleGroupSelector from './components/MuscleGroupSelector';
-import StatsCard from './components/StatsCard';
-import WeeklyView from './components/WeeklyView';
-import MonthlyView from './components/MonthlyView';
-import WorkoutHistory from './components/WorkoutHistory';
-import ProgressView from './components/ProgressView';
-import HydrationCard from './components/HydrationCard';
 import * as api from './services/api';
-import './index.css';
+
+// Components
+import Header from './components/Header';
+import ActivityRings from './components/ActivityRings';
+import HydrationCard from './components/HydrationCard';
+import WorkoutModal from './components/WorkoutModal';
+import BottomNav from './components/BottomNav';
+import WorkoutSection from './components/WorkoutSection';
+import ProgressView from './components/ProgressView';
+import { Toaster, toast } from 'react-hot-toast';
 
 function App() {
-  const [activeTab, setActiveTab] = useState('today');
+  const [activeTab, setActiveTab] = useState('home');
   const [workouts, setWorkouts] = useState([]);
+  const [showWorkoutModal, setShowWorkoutModal] = useState(false);
+  const [selectedWorkout, setSelectedWorkout] = useState(null);
   const [weeklyStats, setWeeklyStats] = useState([]);
-  const [monthlyStats, setMonthlyStats] = useState({ training_days: 0, muscle_groups: [] });
-  const [streak, setStreak] = useState(0);
-  const [settings, setSettings] = useState({ weekly_goal: 4 });
-  const [isLoading, setIsLoading] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [showConfetti, setShowConfetti] = useState(false);
-  const [editingWorkout, setEditingWorkout] = useState(null);
-  const [viewDate, setViewDate] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  // Load data on mount
-  useEffect(() => {
-    loadData();
-  }, []);
+  // User Settings (could be fetched from API)
+  const weeklyGoal = 4; // Days per week
 
   const loadData = async () => {
     try {
-      const [workoutsData, weeklyData, monthlyData, streakData, settingsData] = await Promise.all([
-        api.getWorkouts(),
-        api.getWeeklyStats(),
-        api.getMonthlyStats(),
-        api.getStreak(),
-        api.getSettings()
+      setLoading(true);
+      const [workoutsData, statsData] = await Promise.all([
+        api.getAllWorkouts(),
+        api.getWeeklyStats()
       ]);
-
       setWorkouts(workoutsData);
-      setWeeklyStats(weeklyData);
-      setMonthlyStats(monthlyData);
-      setStreak(streakData.streak);
-      setSettings(settingsData);
+      setWeeklyStats(statsData);
     } catch (error) {
       console.error('Error loading data:', error);
+      toast.error('Erro ao carregar dados');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleLogWorkout = async (muscleGroups, notes) => {
-    setIsLoading(true);
+  useEffect(() => {
+    loadData();
+  }, [refreshKey]);
+
+  // --- Statistics Calculation ---
+  const stats = useMemo(() => {
+    if (!workouts.length) return { weekly: 0, monthly: 0, streak: 0 };
+
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    // 1. Weekly Progress
+    // Find start of week (Sunday)
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay());
+
+    const workoutsThisWeek = workouts.filter(w => {
+      const wDate = new Date(w.date + 'T00:00:00');
+      return wDate >= startOfWeek;
+    }).length; // This counts distinct WORKOUTS. If multiple per day? 
+    // Usually 1 per day is the goal logic. 
+    // Filter unique dates for the week
+    const uniqueDaysWeek = new Set(workouts
+      .filter(w => {
+        const wDate = new Date(w.date + 'T00:00:00');
+        return wDate >= startOfWeek;
+      })
+      .map(w => w.date)
+    ).size;
+
+    const weeklyProgress = Math.min((uniqueDaysWeek / weeklyGoal) * 100, 100);
+
+    // 2. Monthly Progress (Arbitrary goal: 12 days?) or just consistency?
+    // Let's assume goal is roughly weeklyGoal * 4
+    const monthlyGoal = weeklyGoal * 4;
+    const uniqueDaysMonth = new Set(workouts
+      .filter(w => {
+        const wDate = new Date(w.date + 'T00:00:00');
+        return wDate.getMonth() === currentMonth && wDate.getFullYear() === currentYear;
+      })
+      .map(w => w.date)
+    ).size;
+
+    const monthlyProgress = Math.min((uniqueDaysMonth / monthlyGoal) * 100, 100);
+
+    // 3. Streak
+    let streak = 0;
+    const sortedDates = [...new Set(workouts.map(w => w.date))].sort((a, b) => new Date(b) - new Date(a));
+
+    // Check if trained today
+    const trainedToday = sortedDates.includes(today.toISOString().split('T')[0]);
+    let checkDate = new Date(today);
+
+    // If not trained today, checking from yesterday for streak? 
+    // Usually streak allows missing current day until it ends. 
+    // Let's strictly count consecutive days backward from most recent workout logic?
+    // User logic: "Streak" usually implies continuous.
+    // If I didn't train today, streak might be 0? 
+    // Or streak is "current active streak".
+
+    // Simple logic:
+    if (sortedDates.length > 0) {
+      let currentString = sortedDates[0];
+      let currentDate = new Date(currentString + 'T00:00:00');
+
+      // Difference between today and last workout
+      const diffHours = (today - currentDate) / (1000 * 60 * 60);
+
+      if (diffHours < 48) { // If last workout was today or yesterday
+        streak = 1;
+        let previousDate = new Date(currentDate);
+        previousDate.setDate(previousDate.getDate() - 1);
+
+        for (let i = 1; i < sortedDates.length; i++) {
+          const d = new Date(sortedDates[i] + 'T00:00:00');
+          if (d.getTime() === previousDate.getTime()) {
+            streak++;
+            previousDate.setDate(previousDate.getDate() - 1);
+          } else {
+            break;
+          }
+        }
+      }
+    }
+
+    return { weekly: weeklyProgress, monthly: monthlyProgress, streak };
+  }, [workouts]);
+
+
+  const handleSaveWorkout = async (data) => {
     try {
-      if (editingWorkout) {
-        // Update existing workout
-        await api.updateWorkout(editingWorkout.id, muscleGroups, notes);
-        setEditingWorkout(null);
+      if (selectedWorkout) {
+        await api.updateWorkout(selectedWorkout.id, data);
+        toast.success('Treino atualizado!');
       } else {
-        // Create new workout
-        await api.logWorkout(muscleGroups, notes);
+        await api.logWorkout(data);
+        toast.success('Treino registrado!');
       }
-
-      // Show success animation
-      setShowSuccess(true);
-
-      // Haptic feedback
-      if (navigator.vibrate) {
-        navigator.vibrate([50, 100, 50]);
-      }
-
-      // Reload data
-      await loadData();
-
-      // Check for celebrations
-      const newWeeklyCount = weeklyStats.length + 1;
-      if (newWeeklyCount >= settings.weekly_goal) {
-        setShowConfetti(true);
-        setTimeout(() => setShowConfetti(false), 3000);
-      }
-
-      setTimeout(() => setShowSuccess(false), 2000);
+      setShowWorkoutModal(false);
+      setSelectedWorkout(null);
+      setRefreshKey(prev => prev + 1);
     } catch (error) {
-      console.error('Error logging workout:', error);
-      alert('Erro ao registrar treino. Tente novamente.');
-    } finally {
-      setIsLoading(false);
+      console.error('Error saving workout:', error);
+      toast.error('Erro ao salvar treino');
     }
   };
 
   const handleDeleteWorkout = async (id) => {
-    if (!confirm('Deseja realmente excluir este treino?')) return;
-
+    if (!window.confirm('Tem certeza que deseja excluir este treino?')) return;
     try {
       await api.deleteWorkout(id);
-      await loadData();
+      toast.success('Treino excluído');
+      setRefreshKey(prev => prev + 1);
     } catch (error) {
       console.error('Error deleting workout:', error);
-      alert('Erro ao excluir treino. Tente novamente.');
+      toast.error('Erro ao excluir');
     }
   };
 
   const handleEditWorkout = (workout) => {
-    setEditingWorkout(workout);
-    setActiveTab('today');
-    // Scroll to top
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setSelectedWorkout(workout);
+    setShowWorkoutModal(true);
   };
 
-  // Calculate progress percentages
-  const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
-  const monthlyProgress = (monthlyStats.training_days / daysInMonth) * 100;
-
-  const weeklyProgress = weeklyStats.length;
-  const weeklyGoalProgress = (weeklyProgress / settings.weekly_goal) * 100;
-
   return (
-    <div className="min-h-screen bg-background pb-20 px-4 pt-8">
-      <div className="max-w-md mx-auto space-y-6">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-8"
-        >
-          <h1 className="text-3xl font-bold mb-2">MyFit</h1>
-          <p className="text-text-secondary text-sm">Sua consistência na academia</p>
-        </motion.div>
-
-        {/* Activity Rings */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.2 }}
-        >
-          <ActivityRings
-            weeklyProgress={weeklyGoalProgress}
-            monthlyProgress={monthlyProgress}
-            streak={streak}
-          />
-        </motion.div>
-
-        {/* Success Message */}
-        <AnimatePresence>
-          {showSuccess && (
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="card bg-secondary text-black text-center py-4"
-            >
-              <div className="text-2xl mb-1">🎉</div>
-              <div className="font-semibold">
-                {editingWorkout ? 'Treino atualizado!' : 'Treino registrado!'}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Confetti Celebration */}
-        <AnimatePresence>
-          {showConfetti && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              className="card bg-gradient-to-r from-primary to-secondary text-white text-center py-6"
-            >
-              <div className="text-4xl mb-2">🎊 🎉 🎊</div>
-              <div className="text-xl font-bold mb-1">Meta Semanal Batida!</div>
-              <div className="text-sm opacity-90">Parabéns pela consistência! 💪</div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-
-
-        {/* Stats Card */}
-        <StatsCard
-          monthlyStats={monthlyStats}
-          streak={streak}
-          weeklyGoal={settings.weekly_goal}
-          weeklyProgress={weeklyProgress}
+    <div className="min-h-screen bg-background pb-24 px-4 pt-8">
+      <div className="max-w-md mx-auto relative min-h-[80vh]">
+        <Toaster
+          position="top-center"
+          toastOptions={{
+            style: {
+              background: '#1F1F1F',
+              color: '#fff',
+              borderRadius: '12px',
+              border: '1px solid rgba(255,255,255,0.1)'
+            }
+          }}
         />
 
-        {/* Hydration Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
-          <HydrationCard />
-        </motion.div>
-
-        {/* Tab Navigation */}
-        <div className="flex gap-2 overflow-x-auto scrollbar-hide bg-surface-light p-1 rounded-full">
-          {[
-            { id: 'today', label: 'Hoje' },
-            { id: 'week', label: 'Semana' },
-            { id: 'month', label: 'Mês' },
-            { id: 'progress', label: 'Progresso' },
-            { id: 'history', label: 'Histórico' }
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`tab-btn ${activeTab === tab.id ? 'active' : ''}`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Tab Content */}
         <AnimatePresence mode="wait">
-          {activeTab === 'today' && (
+          {activeTab === 'home' && (
             <motion.div
-              key="today"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
+              key="home"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
               className="space-y-6"
             >
-              <div className="card">
-                <h2 className="text-xl font-bold mb-4">
-                  {editingWorkout ? '✏️ Editar Treino' : 'Registrar Treino'}
-                </h2>
-                {editingWorkout && (
-                  <div className="mb-4 p-3 bg-tertiary bg-opacity-10 rounded-xl">
-                    <p className="text-sm text-tertiary">
-                      Editando treino de hoje. Selecione os grupos musculares novamente.
-                    </p>
-                    <button
-                      onClick={() => setEditingWorkout(null)}
-                      className="text-xs text-text-secondary hover:text-text-primary mt-2"
-                    >
-                      Cancelar edição
-                    </button>
-                  </div>
-                )}
-                <MuscleGroupSelector
-                  onConfirm={handleLogWorkout}
-                  isLoading={isLoading}
-                  initialSelected={editingWorkout ? editingWorkout.muscle_groups.split(',') : []}
+              <Header title="MyFit" subtitle="Sua jornada diária" />
+              <ActivityRings
+                weeklyProgress={stats.weekly}
+                monthlyProgress={stats.monthly}
+                streak={stats.streak}
+              />
+              <HydrationCard />
+            </motion.div>
+          )}
+
+          {activeTab === 'workouts' && (
+            <motion.div
+              key="workouts"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.2 }}
+            >
+              <Header title="Seus Treinos" subtitle="Gerencie sua rotina" />
+              <div className="mt-6">
+                <WorkoutSection
+                  workouts={workouts}
+                  weeklyStats={weeklyStats}
+                  onEditWorkout={handleEditWorkout}
+                  onDeleteWorkout={handleDeleteWorkout}
                 />
               </div>
 
-              {/* Today's workouts */}
-              {!editingWorkout && workouts.filter(w => w.date === api.formatDate()).length > 0 && (
-                <div className="card">
-                  <h3 className="text-lg font-semibold mb-3">Treinos de Hoje</h3>
-                  <div className="space-y-2">
-                    {workouts
-                      .filter(w => w.date === api.formatDate())
-                      .map(w => {
-                        const groups = w.muscle_groups.split(',');
-                        return (
-                          <div key={w.id} className="p-3 bg-surface-light rounded-xl">
-                            <div className="flex flex-wrap gap-2 mb-2">
-                              {groups.map((group, idx) => (
-                                <span key={idx} className="text-sm font-medium capitalize">
-                                  {group}
-                                  {idx < groups.length - 1 ? ',' : ''}
-                                </span>
-                              ))}
-                            </div>
-                            {w.notes && (
-                              <p className="text-sm text-text-secondary italic">"{w.notes}"</p>
-                            )}
-                          </div>
-                        );
-                      })}
-                  </div>
-                </div>
-              )}
-            </motion.div>
-          )}
-
-          {activeTab === 'week' && (
-            <motion.div
-              key="week"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-            >
-              <WeeklyView weeklyData={weeklyStats} onDayClick={setViewDate} />
-              {viewDate && (
-                <div className="mt-4">
-                  <h3 className="text-sm font-bold text-text-secondary mb-2 uppercase tracking-wide">
-                    {new Date(viewDate).toLocaleDateString('pt-BR')}
-                  </h3>
-                  <div className="space-y-2">
-                    {workouts
-                      .filter(w => w.date === viewDate)
-                      .map(w => {
-                        const groups = w.muscle_groups.split(',');
-                        return (
-                          <div key={w.id} className="p-3 bg-surface-light rounded-xl flex justify-between items-center">
-                            <div>
-                              <div className="flex flex-wrap gap-2 mb-1">
-                                {groups.map((group, idx) => (
-                                  <span key={idx} className="text-sm font-bold capitalize text-white">
-                                    {group}
-                                    {idx < groups.length - 1 ? ',' : ''}
-                                  </span>
-                                ))}
-                              </div>
-                              {w.notes && (
-                                <p className="text-xs text-text-secondary italic">"{w.notes}"</p>
-                              )}
-                            </div>
-                            <div className="flex gap-2">
-                              <button onClick={() => handleEditWorkout(w)} className="text-xl">✏️</button>
-                              <button onClick={() => handleDeleteWorkout(w.id)} className="text-xl">🗑️</button>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    {workouts.filter(w => w.date === viewDate).length === 0 && (
-                      <p className="text-center text-text-secondary py-4">Nenhum treino neste dia.</p>
-                    )}
-                  </div>
-                </div>
-              )}
-            </motion.div>
-          )}
-
-          {activeTab === 'month' && (
-            <motion.div
-              key="month"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-            >
-              <MonthlyView workouts={workouts} onDayClick={setViewDate} />
-              {viewDate && (
-                <div className="mt-4">
-                  <h3 className="text-sm font-bold text-text-secondary mb-2 uppercase tracking-wide">
-                    {new Date(viewDate).toLocaleDateString('pt-BR')}
-                  </h3>
-                  <div className="space-y-2">
-                    {workouts
-                      .filter(w => w.date === viewDate)
-                      .map(w => {
-                        const groups = w.muscle_groups.split(',');
-                        return (
-                          <div key={w.id} className="p-3 bg-surface-light rounded-xl flex justify-between items-center">
-                            <div>
-                              <div className="flex flex-wrap gap-2 mb-1">
-                                {groups.map((group, idx) => (
-                                  <span key={idx} className="text-sm font-bold capitalize text-white">
-                                    {group}
-                                    {idx < groups.length - 1 ? ',' : ''}
-                                  </span>
-                                ))}
-                              </div>
-                              {w.notes && (
-                                <p className="text-xs text-text-secondary italic">"{w.notes}"</p>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    {workouts.filter(w => w.date === viewDate).length === 0 && (
-                      <p className="text-center text-text-secondary py-4">Nenhum treino neste dia.</p>
-                    )}
-                  </div>
-                </div>
-              )}
+              {/* Floating Action Button for Adding Workout */}
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => {
+                  setSelectedWorkout(null);
+                  setShowWorkoutModal(true);
+                }}
+                className="fixed bottom-24 right-6 w-14 h-14 bg-primary rounded-full shadow-lg shadow-primary/30 flex items-center justify-center text-2xl z-40 border border-white/20"
+              >
+                ➕
+              </motion.button>
             </motion.div>
           )}
 
           {activeTab === 'progress' && (
             <motion.div
               key="progress"
-              initial={{ opacity: 0, x: -20 }}
+              initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.2 }}
             >
-              <ProgressView />
-            </motion.div>
-          )}
-
-          {activeTab === 'history' && (
-            <motion.div
-              key="history"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-            >
-              <WorkoutHistory
-                workouts={workouts}
-                onDelete={handleDeleteWorkout}
-                onEdit={handleEditWorkout}
-              />
+              <Header title="Seu Progresso" subtitle="Acompanhe sua evolução" />
+              <div className="mt-6">
+                <ProgressView />
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Streak Fire Effect */}
-        {streak >= 7 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="fixed bottom-4 right-4 text-6xl"
-            style={{ filter: 'drop-shadow(0 0 10px rgba(255, 100, 0, 0.5))' }}
-          >
-            🔥
-          </motion.div>
-        )}
+        <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
+
+        <WorkoutModal
+          isOpen={showWorkoutModal}
+          onClose={() => {
+            setShowWorkoutModal(false);
+            setSelectedWorkout(null);
+          }}
+          onSave={handleSaveWorkout}
+          initialData={selectedWorkout}
+        />
       </div>
     </div>
   );
