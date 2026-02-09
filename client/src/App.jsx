@@ -42,7 +42,7 @@ function App() {
       setWeightLogs(weightData);
     } catch (error) {
       console.error('Error loading data:', error);
-      toast.error('Erro ao carregar dados');
+      toast.error(`Erro ao carregar dados: ${error.message}`);
     } finally {
       setLoading(false);
     }
