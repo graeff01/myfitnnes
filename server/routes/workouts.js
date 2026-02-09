@@ -28,7 +28,7 @@ router.get('/', async (req, res) => {
         res.json(workouts);
     } catch (error) {
         console.error('Error fetching workouts:', error);
-        res.status(500).json({ error: 'Failed to fetch workouts' });
+        res.status(500).json({ error: 'Failed to fetch workouts', details: error.message });
     }
 });
 
@@ -41,7 +41,7 @@ router.get('/date/:date', async (req, res) => {
         res.json(workouts);
     } catch (error) {
         console.error('Error fetching workouts for date:', error);
-        res.status(500).json({ error: 'Failed to fetch workouts' });
+        res.status(500).json({ error: 'Failed to fetch workouts', details: error.message });
     }
 });
 
@@ -70,7 +70,7 @@ router.get('/stats/weekly', async (req, res) => {
         res.json(stats);
     } catch (error) {
         console.error('Error fetching weekly stats:', error);
-        res.status(500).json({ error: 'Failed to fetch weekly stats' });
+        res.status(500).json({ error: 'Failed to fetch weekly stats', details: error.message });
     }
 });
 
@@ -115,7 +115,7 @@ router.get('/stats/monthly', async (req, res) => {
         });
     } catch (error) {
         console.error('Error fetching monthly stats:', error);
-        res.status(500).json({ error: 'Failed to fetch monthly stats' });
+        res.status(500).json({ error: 'Failed to fetch monthly stats', details: error.message });
     }
 });
 
@@ -260,7 +260,7 @@ router.get('/settings', async (req, res) => {
         res.json(settings || { weekly_goal: 4 });
     } catch (error) {
         console.error('Error fetching settings:', error);
-        res.status(500).json({ error: 'Failed to fetch settings' });
+        res.status(500).json({ error: 'Failed to fetch settings', details: error.message });
     }
 });
 
@@ -293,7 +293,7 @@ router.put('/settings', async (req, res) => {
         res.json(updated);
     } catch (error) {
         console.error('Error updating settings:', error);
-        res.status(500).json({ error: 'Failed to update settings' });
+        res.status(500).json({ error: 'Failed to update settings', details: error.message });
     }
 });
 

@@ -26,7 +26,7 @@ router.get('/:date', async (req, res) => {
         res.json(log);
     } catch (error) {
         console.error('Error fetching hydration:', error);
-        res.status(500).json({ error: 'Failed to fetch hydration' });
+        res.status(500).json({ error: 'Failed to fetch hydration', details: error.message });
     }
 });
 
@@ -58,7 +58,7 @@ router.post('/', async (req, res) => {
         res.json(updated);
     } catch (error) {
         console.error('Error logging hydration:', error);
-        res.status(500).json({ error: 'Failed to log hydration' });
+        res.status(500).json({ error: 'Failed to log hydration', details: error.message });
     }
 });
 

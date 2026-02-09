@@ -27,6 +27,33 @@ const db = new sqlite3.Database(dbPath, async (err) => {
 
 async function runMigrations() {
     console.log('Running migrations check...');
+
+    // 1. Ensure users table exists first
+    try {
+        await runAsync(`CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL UNIQUE,
+            password_hash TEXT NOT NULL,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )`);
+        console.log('✅ Users table ready.');
+    } catch (err) {
+        console.error('Failed to create users table:', err);
+        return; // Can't proceed without users table
+    }
+
+    // 2. Ensure at least one user exists for DEFAULT 1
+    try {
+        const admin = await getAsync('SELECT id FROM users WHERE id = 1');
+        if (!admin) {
+            console.log('Seeding default user...');
+            // Placeholder user with random password (they can register/login normally later)
+            await runAsync(`INSERT OR IGNORE INTO users (id, username, password_hash) VALUES (1, 'default_user', 'placeholder')`);
+        }
+    } catch (err) {
+        console.error('Failed to seed default user:', err);
+    }
+
     const tables = [
         'workouts',
         'weight_logs',
@@ -41,11 +68,12 @@ async function runMigrations() {
             const hasUserId = columns.some(col => col.name === 'user_id');
             if (!hasUserId) {
                 console.log(`Adding user_id to ${table}...`);
+                // Use a sub-transaction or just execute
                 await runAsync(`ALTER TABLE ${table} ADD COLUMN user_id INTEGER DEFAULT 1`);
                 console.log(`✅ Table ${table} migrated.`);
             }
         } catch (err) {
-            console.error(`Failed to migrate ${table}:`, err);
+            console.error(`Failed to migrate ${table}:`, err.message);
         }
     }
 
@@ -53,7 +81,7 @@ async function runMigrations() {
     try {
         const columns = await allAsync('PRAGMA table_info(settings)');
         const hasUserId = columns.some(col => col.name === 'user_id');
-        if (!hasUserId) {
+        if (columns.length > 0 && !hasUserId) {
             console.log('Migrating settings table...');
             await runAsync('ALTER TABLE settings RENAME TO settings_old');
             await runAsync(`CREATE TABLE settings (
@@ -69,9 +97,12 @@ async function runMigrations() {
             await runAsync('INSERT INTO settings (user_id, weekly_goal) SELECT 1, weekly_goal FROM settings_old WHERE id = 1');
             await runAsync('DROP TABLE settings_old');
             console.log('✅ Settings table migrated.');
+        } else if (columns.length === 0) {
+            // Table doesn't exist yet, schema.sql will handle it
+            console.log('Settings table will be handled by schema.sql');
         }
     } catch (err) {
-        console.error('Failed to migrate settings:', err);
+        console.error('Failed to migrate settings:', err.message);
     }
 }
 

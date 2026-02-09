@@ -37,7 +37,7 @@ router.get('/weight', async (req, res) => {
         res.json(logs);
     } catch (error) {
         console.error('Error fetching weight logs:', error);
-        res.status(500).json({ error: 'Failed to fetch weight logs' });
+        res.status(500).json({ error: 'Failed to fetch weight logs', details: error.message });
     }
 });
 
@@ -64,7 +64,7 @@ router.post('/weight', async (req, res) => {
         res.status(201).json(log);
     } catch (error) {
         console.error('Error logging weight:', error);
-        res.status(500).json({ error: 'Failed to log weight' });
+        res.status(500).json({ error: 'Failed to log weight', details: error.message });
     }
 });
 
@@ -82,7 +82,7 @@ router.delete('/weight/:id', async (req, res) => {
         res.json({ message: 'Weight log deleted successfully' });
     } catch (error) {
         console.error('Error deleting weight log:', error);
-        res.status(500).json({ error: 'Failed to delete weight log' });
+        res.status(500).json({ error: 'Failed to delete weight log', details: error.message });
     }
 });
 
@@ -118,7 +118,7 @@ router.get('/measurements', async (req, res) => {
         res.json(measurements);
     } catch (error) {
         console.error('Error fetching measurements:', error);
-        res.status(500).json({ error: 'Failed to fetch measurements' });
+        res.status(500).json({ error: 'Failed to fetch measurements', details: error.message });
     }
 });
 
@@ -143,7 +143,7 @@ router.post('/measurements', async (req, res) => {
         res.status(201).json(measurement);
     } catch (error) {
         console.error('Error logging measurements:', error);
-        res.status(500).json({ error: 'Failed to log measurements' });
+        res.status(500).json({ error: 'Failed to log measurements', details: error.message });
     }
 });
 
@@ -160,7 +160,7 @@ router.delete('/measurements/:id', async (req, res) => {
         res.json({ message: 'Measurement deleted successfully' });
     } catch (error) {
         console.error('Error deleting measurement:', error);
-        res.status(500).json({ error: 'Failed to delete measurement' });
+        res.status(500).json({ error: 'Failed to delete measurement', details: error.message });
     }
 });
 
@@ -177,7 +177,7 @@ router.get('/photos', async (req, res) => {
         res.json(photos);
     } catch (error) {
         console.error('Error fetching photos:', error);
-        res.status(500).json({ error: 'Failed to fetch photos' });
+        res.status(500).json({ error: 'Failed to fetch photos', details: error.message });
     }
 });
 
@@ -199,7 +199,7 @@ router.post('/photos', async (req, res) => {
         res.status(201).json(photo);
     } catch (error) {
         console.error('Error logging photo:', error);
-        res.status(500).json({ error: 'Failed to log photo' });
+        res.status(500).json({ error: 'Failed to log photo', details: error.message });
     }
 });
 
@@ -217,7 +217,7 @@ router.delete('/photos/:id', async (req, res) => {
         res.json({ message: 'Photo deleted successfully' });
     } catch (error) {
         console.error('Error deleting photo:', error);
-        res.status(500).json({ error: 'Failed to delete photo' });
+        res.status(500).json({ error: 'Failed to delete photo', details: error.message });
     }
 });
 
