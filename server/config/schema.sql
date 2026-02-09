@@ -1,24 +1,29 @@
 -- Workouts table
 CREATE TABLE IF NOT EXISTS workouts (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
   date TEXT NOT NULL,
   muscle_groups TEXT NOT NULL,
   notes TEXT,
-  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
 -- Weight tracking table
 CREATE TABLE IF NOT EXISTS weight_logs (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
   date TEXT NOT NULL,
   weight REAL NOT NULL,
   notes TEXT,
-  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
 -- Body measurements table
 CREATE TABLE IF NOT EXISTS measurements (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
   date TEXT NOT NULL,
   chest REAL,
   waist REAL,
@@ -30,16 +35,20 @@ CREATE TABLE IF NOT EXISTS measurements (
   left_calf REAL,
   right_calf REAL,
   notes TEXT,
-  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
 -- Hydration logs table (Updated to ML)
 CREATE TABLE IF NOT EXISTS hydration_logs (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  date TEXT NOT NULL UNIQUE,
+  user_id INTEGER NOT NULL,
+  date TEXT NOT NULL,
   volume_ml INTEGER DEFAULT 0,
   goal_ml INTEGER DEFAULT 2500,
-  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id, date),
+  FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
 -- User settings table
@@ -55,10 +64,12 @@ CREATE TABLE IF NOT EXISTS settings (
 -- Evolution photos table
 CREATE TABLE IF NOT EXISTS evolution_photos (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
   date TEXT NOT NULL,
   image_data TEXT NOT NULL, -- Base64
   caption TEXT,
-  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
 -- Users table

@@ -6,8 +6,19 @@ export default function BottomNav({ activeTab, setActiveTab }) {
         { id: 'home', icon: Home, label: 'Início' },
         { id: 'workouts', icon: Dumbbell, label: 'Treinos' },
         { id: 'progress', icon: LineChart, label: 'Progresso' },
-        // { id: 'profile', icon: User, label: 'Perfil' } // Future use
+        { id: 'logout', icon: User, label: 'Sair' }
     ];
+
+    const handleNavClick = (id) => {
+        if (id === 'logout') {
+            if (window.confirm('Deseja realmente sair?')) {
+                api.logout();
+                window.location.reload(); // Quick way to trigger auth check in App.jsx
+            }
+            return;
+        }
+        setActiveTab(id);
+    };
 
     return (
         <div className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-3 pt-2">
@@ -19,7 +30,7 @@ export default function BottomNav({ activeTab, setActiveTab }) {
                     return (
                         <button
                             key={item.id}
-                            onClick={() => setActiveTab(item.id)}
+                            onClick={() => handleNavClick(item.id)}
                             className={`relative flex flex-col items-center justify-center w-16 h-14 rounded-xl transition-all duration-300 ${isActive ? 'text-primary' : 'text-text-secondary hover:text-white'
                                 }`}
                         >

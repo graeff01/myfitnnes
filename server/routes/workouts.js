@@ -9,15 +9,16 @@ router.use(authenticateToken);
 router.get('/', async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
+        const userId = req.user.id;
 
-        let query = 'SELECT * FROM workouts';
-        const params = [];
+        let query = 'SELECT * FROM workouts WHERE user_id = ?';
+        const params = [userId];
 
         if (startDate && endDate) {
-            query += ' WHERE date BETWEEN ? AND ?';
+            query += ' AND date BETWEEN ? AND ?';
             params.push(startDate, endDate);
         } else if (startDate) {
-            query += ' WHERE date >= ?';
+            query += ' AND date >= ?';
             params.push(startDate);
         }
 
@@ -35,7 +36,8 @@ router.get('/', async (req, res) => {
 router.get('/date/:date', async (req, res) => {
     try {
         const { date } = req.params;
-        const workouts = await allAsync('SELECT * FROM workouts WHERE date = ? ORDER BY created_at DESC', [date]);
+        const userId = req.user.id;
+        const workouts = await allAsync('SELECT * FROM workouts WHERE date = ? AND user_id = ? ORDER BY created_at DESC', [date, userId]);
         res.json(workouts);
     } catch (error) {
         console.error('Error fetching workouts for date:', error);
@@ -47,6 +49,7 @@ router.get('/date/:date', async (req, res) => {
 router.get('/stats/weekly', async (req, res) => {
     try {
         const { startDate } = req.query;
+        const userId = req.user.id;
 
         // If no start date provided, use current week
         const start = startDate || new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
@@ -59,10 +62,10 @@ router.get('/stats/weekly', async (req, res) => {
         notes,
         COUNT(*) as workout_count
       FROM workouts
-      WHERE date BETWEEN ? AND ?
+      WHERE user_id = ? AND date BETWEEN ? AND ?
       GROUP BY date
       ORDER BY date ASC
-    `, [start, end]);
+    `, [userId, start, end]);
 
         res.json(stats);
     } catch (error) {
@@ -75,6 +78,7 @@ router.get('/stats/weekly', async (req, res) => {
 router.get('/stats/monthly', async (req, res) => {
     try {
         const { month } = req.query; // Format: YYYY-MM
+        const userId = req.user.id;
 
         // If no month provided, use current month
         const targetMonth = month || new Date().toISOString().slice(0, 7);
@@ -82,8 +86,8 @@ router.get('/stats/monthly', async (req, res) => {
         const workouts = await allAsync(`
       SELECT muscle_groups
       FROM workouts
-      WHERE strftime('%Y-%m', date) = ?
-    `, [targetMonth]);
+      WHERE user_id = ? AND strftime('%Y-%m', date) = ?
+    `, [userId, targetMonth]);
 
         // Count muscle groups
         const muscleGroupCount = {};
@@ -97,8 +101,8 @@ router.get('/stats/monthly', async (req, res) => {
         const totalDays = await getAsync(`
       SELECT COUNT(DISTINCT date) as training_days
       FROM workouts
-      WHERE strftime('%Y-%m', date) = ?
-    `, [targetMonth]);
+      WHERE user_id = ? AND strftime('%Y-%m', date) = ?
+    `, [userId, targetMonth]);
 
         res.json({
             month: targetMonth,
@@ -118,11 +122,13 @@ router.get('/stats/monthly', async (req, res) => {
 // Get current streak
 router.get('/stats/streak', async (req, res) => {
     try {
+        const userId = req.user.id;
         const allDates = await allAsync(`
       SELECT DISTINCT date 
       FROM workouts 
+      WHERE user_id = ?
       ORDER BY date DESC
-    `);
+    `, [userId]);
 
         if (allDates.length === 0) {
             return res.json({ streak: 0 });
@@ -155,6 +161,7 @@ router.get('/stats/streak', async (req, res) => {
 router.post('/', async (req, res) => {
     try {
         const { date, muscle_groups, notes } = req.body;
+        const userId = req.user.id;
 
         if (!date || !muscle_groups || muscle_groups.length === 0) {
             return res.status(400).json({ error: 'Date and at least one muscle_group are required' });
@@ -173,11 +180,11 @@ router.post('/', async (req, res) => {
         const muscleGroupsStr = groupsArray.join(',');
 
         const result = await runAsync(`
-      INSERT INTO workouts (date, muscle_groups, notes)
-      VALUES (?, ?, ?)
-    `, [date, muscleGroupsStr, notes || null]);
+      INSERT INTO workouts (user_id, date, muscle_groups, notes)
+      VALUES (?, ?, ?, ?)
+    `, [userId, date, muscleGroupsStr, notes || null]);
 
-        const workout = await getAsync('SELECT * FROM workouts WHERE id = ?', [result.lastID]);
+        const workout = await getAsync('SELECT * FROM workouts WHERE id = ? AND user_id = ?', [result.lastID, userId]);
 
         res.status(201).json(workout);
     } catch (error) {
@@ -191,6 +198,7 @@ router.put('/:id', async (req, res) => {
     try {
         const { id } = req.params;
         const { muscle_groups, notes } = req.body;
+        const userId = req.user.id;
 
         if (!muscle_groups || muscle_groups.length === 0) {
             return res.status(400).json({ error: 'At least one muscle_group is required' });
@@ -210,14 +218,14 @@ router.put('/:id', async (req, res) => {
         const result = await runAsync(`
       UPDATE workouts 
       SET muscle_groups = ?, notes = ?
-      WHERE id = ?
-    `, [muscleGroupsStr, notes || null, id]);
+      WHERE id = ? AND user_id = ?
+    `, [muscleGroupsStr, notes || null, id, userId]);
 
         if (result.changes === 0) {
-            return res.status(404).json({ error: 'Workout not found' });
+            return res.status(404).json({ error: 'Workout not found or unauthorized' });
         }
 
-        const workout = await getAsync('SELECT * FROM workouts WHERE id = ?', [id]);
+        const workout = await getAsync('SELECT * FROM workouts WHERE id = ? AND user_id = ?', [id, userId]);
         res.json(workout);
     } catch (error) {
         console.error('Error updating workout:', error);
@@ -229,11 +237,12 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
     try {
         const { id } = req.params;
+        const userId = req.user.id;
 
-        const result = await runAsync('DELETE FROM workouts WHERE id = ?', [id]);
+        const result = await runAsync('DELETE FROM workouts WHERE id = ? AND user_id = ?', [id, userId]);
 
         if (result.changes === 0) {
-            return res.status(404).json({ error: 'Workout not found' });
+            return res.status(404).json({ error: 'Workout not found or unauthorized' });
         }
 
         res.json({ message: 'Workout deleted successfully' });
@@ -246,7 +255,8 @@ router.delete('/:id', async (req, res) => {
 // Get user settings
 router.get('/settings', async (req, res) => {
     try {
-        const settings = await getAsync('SELECT * FROM settings WHERE id = 1');
+        const userId = req.user.id;
+        const settings = await getAsync('SELECT * FROM settings WHERE user_id = ?', [userId]);
         res.json(settings || { weekly_goal: 4 });
     } catch (error) {
         console.error('Error fetching settings:', error);
@@ -255,21 +265,31 @@ router.get('/settings', async (req, res) => {
 });
 
 // Update user settings
-router.put('/settings', async (req, res) => {
+router.post('/settings', async (req, res) => {
     try {
         const { weekly_goal } = req.body;
+        const userId = req.user.id;
 
         if (!weekly_goal || weekly_goal < 1 || weekly_goal > 7) {
             return res.status(400).json({ error: 'Weekly goal must be between 1 and 7' });
         }
 
-        await runAsync(`
-      UPDATE settings 
-      SET weekly_goal = ?, updated_at = CURRENT_TIMESTAMP
-      WHERE id = 1
-    `, [weekly_goal]);
+        const existing = await getAsync('SELECT id FROM settings WHERE user_id = ?', [userId]);
 
-        const settings = await getAsync('SELECT * FROM settings WHERE id = 1');
+        if (existing) {
+            await runAsync(`
+                UPDATE settings 
+                SET weekly_goal = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE user_id = ?
+            `, [weekly_goal, userId]);
+        } else {
+            await runAsync(`
+                INSERT INTO settings (user_id, weekly_goal)
+                VALUES (?, ?)
+            `, [userId, weekly_goal]);
+        }
+
+        const settings = await getAsync('SELECT * FROM settings WHERE user_id = ?', [userId]);
         res.json(settings);
     } catch (error) {
         console.error('Error updating settings:', error);

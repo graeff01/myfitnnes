@@ -9,7 +9,8 @@ router.use(authenticateToken);
 router.get('/:date', async (req, res) => {
     try {
         const { date } = req.params;
-        const log = await getAsync('SELECT * FROM hydration_logs WHERE date = ?', [date]);
+        const userId = req.user.id;
+        const log = await getAsync('SELECT * FROM hydration_logs WHERE date = ? AND user_id = ?', [date, userId]);
 
         if (!log) {
             // Return default if no log exists
@@ -33,26 +34,27 @@ router.get('/:date', async (req, res) => {
 router.post('/', async (req, res) => {
     try {
         const { date, volume_ml, goal_ml } = req.body;
+        const userId = req.user.id;
 
         if (!date || volume_ml === undefined) {
             return res.status(400).json({ error: 'Date and volume_ml are required' });
         }
 
-        const existing = await getAsync('SELECT id FROM hydration_logs WHERE date = ?', [date]);
+        const existing = await getAsync('SELECT id FROM hydration_logs WHERE date = ? AND user_id = ?', [date, userId]);
 
         if (existing) {
             await runAsync(
-                'UPDATE hydration_logs SET volume_ml = ?, goal_ml = ? WHERE date = ?',
-                [volume_ml, goal_ml || 2500, date]
+                'UPDATE hydration_logs SET volume_ml = ?, goal_ml = ? WHERE date = ? AND user_id = ?',
+                [volume_ml, goal_ml || 2500, date, userId]
             );
         } else {
             await runAsync(
-                'INSERT INTO hydration_logs (date, volume_ml, goal_ml) VALUES (?, ?, ?)',
-                [date, volume_ml, goal_ml || 2500]
+                'INSERT INTO hydration_logs (date, volume_ml, goal_ml, user_id) VALUES (?, ?, ?, ?)',
+                [date, volume_ml, goal_ml || 2500, userId]
             );
         }
 
-        const updated = await getAsync('SELECT * FROM hydration_logs WHERE date = ?', [date]);
+        const updated = await getAsync('SELECT * FROM hydration_logs WHERE date = ? AND user_id = ?', [date, userId]);
         res.json(updated);
     } catch (error) {
         console.error('Error logging hydration:', error);

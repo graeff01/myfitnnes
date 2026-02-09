@@ -260,10 +260,6 @@ function App() {
           }}
         />
 
-        <div className="p-4 pb-0">
-          <Header onLogout={() => setIsAuthenticated(false)} />
-        </div>
-
         <AnimatePresence mode="wait">
           {activeTab === 'home' && (
             <motion.div

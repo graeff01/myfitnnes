@@ -13,15 +13,16 @@ router.use(authenticateToken);
 router.get('/weight', async (req, res) => {
     try {
         const { startDate, endDate, limit } = req.query;
+        const userId = req.user.id;
 
-        let query = 'SELECT * FROM weight_logs';
-        const params = [];
+        let query = 'SELECT * FROM weight_logs WHERE user_id = ?';
+        const params = [userId];
 
         if (startDate && endDate) {
-            query += ' WHERE date BETWEEN ? AND ?';
+            query += ' AND date BETWEEN ? AND ?';
             params.push(startDate, endDate);
         } else if (startDate) {
-            query += ' WHERE date >= ?';
+            query += ' AND date >= ?';
             params.push(startDate);
         }
 
@@ -44,6 +45,7 @@ router.get('/weight', async (req, res) => {
 router.post('/weight', async (req, res) => {
     try {
         const { date, weight, notes } = req.body;
+        const userId = req.user.id;
 
         if (!date || !weight) {
             return res.status(400).json({ error: 'Date and weight are required' });
@@ -55,10 +57,10 @@ router.post('/weight', async (req, res) => {
 
         // Always insert new record (remove existing check to allow history)
         const result = await runAsync(
-            'INSERT INTO weight_logs (date, weight, notes) VALUES (?, ?, ?)',
-            [date, weight, notes || null]
+            'INSERT INTO weight_logs (user_id, date, weight, notes) VALUES (?, ?, ?, ?)',
+            [userId, date, weight, notes || null]
         );
-        const log = await getAsync('SELECT * FROM weight_logs WHERE id = ?', [result.lastID]);
+        const log = await getAsync('SELECT * FROM weight_logs WHERE id = ? AND user_id = ?', [result.lastID, userId]);
         res.status(201).json(log);
     } catch (error) {
         console.error('Error logging weight:', error);
@@ -70,10 +72,11 @@ router.post('/weight', async (req, res) => {
 router.delete('/weight/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const result = await runAsync('DELETE FROM weight_logs WHERE id = ?', [id]);
+        const userId = req.user.id;
+        const result = await runAsync('DELETE FROM weight_logs WHERE id = ? AND user_id = ?', [id, userId]);
 
         if (result.changes === 0) {
-            return res.status(404).json({ error: 'Weight log not found' });
+            return res.status(404).json({ error: 'Weight log not found or unauthorized' });
         }
 
         res.json({ message: 'Weight log deleted successfully' });
@@ -91,15 +94,16 @@ router.delete('/weight/:id', async (req, res) => {
 router.get('/measurements', async (req, res) => {
     try {
         const { startDate, endDate, limit } = req.query;
+        const userId = req.user.id;
 
-        let query = 'SELECT * FROM measurements';
-        const params = [];
+        let query = 'SELECT * FROM measurements WHERE user_id = ?';
+        const params = [userId];
 
         if (startDate && endDate) {
-            query += ' WHERE date BETWEEN ? AND ?';
+            query += ' AND date BETWEEN ? AND ?';
             params.push(startDate, endDate);
         } else if (startDate) {
-            query += ' WHERE date >= ?';
+            query += ' AND date >= ?';
             params.push(startDate);
         }
 
@@ -122,6 +126,7 @@ router.get('/measurements', async (req, res) => {
 router.post('/measurements', async (req, res) => {
     try {
         const { date, chest, waist, hips, left_arm, right_arm, left_thigh, right_thigh, left_calf, right_calf, notes } = req.body;
+        const userId = req.user.id;
 
         if (!date) {
             return res.status(400).json({ error: 'Date is required' });
@@ -130,11 +135,11 @@ router.post('/measurements', async (req, res) => {
         // Always insert new record (remove existing check to allow history)
         const result = await runAsync(`
             INSERT INTO measurements 
-            (date, chest, waist, hips, left_arm, right_arm, left_thigh, right_thigh, left_calf, right_calf, notes)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `, [date, chest, waist, hips, left_arm, right_arm, left_thigh, right_thigh, left_calf, right_calf, notes || null]);
+            (user_id, date, chest, waist, hips, left_arm, right_arm, left_thigh, right_thigh, left_calf, right_calf, notes)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [userId, date, chest, waist, hips, left_arm, right_arm, left_thigh, right_thigh, left_calf, right_calf, notes || null]);
 
-        const measurement = await getAsync('SELECT * FROM measurements WHERE id = ?', [result.lastID]);
+        const measurement = await getAsync('SELECT * FROM measurements WHERE id = ? AND user_id = ?', [result.lastID, userId]);
         res.status(201).json(measurement);
     } catch (error) {
         console.error('Error logging measurements:', error);
@@ -166,8 +171,9 @@ router.delete('/measurements/:id', async (req, res) => {
 // Get all photos
 router.get('/photos', async (req, res) => {
     try {
-        const query = 'SELECT * FROM evolution_photos ORDER BY date DESC';
-        const photos = await allAsync(query);
+        const userId = req.user.id;
+        const query = 'SELECT * FROM evolution_photos WHERE user_id = ? ORDER BY date DESC';
+        const photos = await allAsync(query, [userId]);
         res.json(photos);
     } catch (error) {
         console.error('Error fetching photos:', error);
@@ -179,16 +185,17 @@ router.get('/photos', async (req, res) => {
 router.post('/photos', async (req, res) => {
     try {
         const { date, image_data, caption } = req.body;
+        const userId = req.user.id;
 
         if (!date || !image_data) {
             return res.status(400).json({ error: 'Date and image_data are required' });
         }
 
         const result = await runAsync(
-            'INSERT INTO evolution_photos (date, image_data, caption) VALUES (?, ?, ?)',
-            [date, image_data, caption || null]
+            'INSERT INTO evolution_photos (user_id, date, image_data, caption) VALUES (?, ?, ?, ?)',
+            [userId, date, image_data, caption || null]
         );
-        const photo = await getAsync('SELECT * FROM evolution_photos WHERE id = ?', [result.lastID]);
+        const photo = await getAsync('SELECT * FROM evolution_photos WHERE id = ? AND user_id = ?', [result.lastID, userId]);
         res.status(201).json(photo);
     } catch (error) {
         console.error('Error logging photo:', error);
@@ -200,10 +207,11 @@ router.post('/photos', async (req, res) => {
 router.delete('/photos/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const result = await runAsync('DELETE FROM evolution_photos WHERE id = ?', [id]);
+        const userId = req.user.id;
+        const result = await runAsync('DELETE FROM evolution_photos WHERE id = ? AND user_id = ?', [id, userId]);
 
         if (result.changes === 0) {
-            return res.status(404).json({ error: 'Photo not found' });
+            return res.status(404).json({ error: 'Photo not found or unauthorized' });
         }
 
         res.json({ message: 'Photo deleted successfully' });
