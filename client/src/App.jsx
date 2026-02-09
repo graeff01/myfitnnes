@@ -11,7 +11,7 @@ import WorkoutModal from './components/WorkoutModal';
 import BottomNav from './components/BottomNav';
 import WorkoutSection from './components/WorkoutSection';
 import ProgressView from './components/ProgressView';
-// Import removed here, moved to WorkoutSection
+import { Toaster, toast } from 'react-hot-toast';
 import Login from './components/Login';
 
 function App() {
