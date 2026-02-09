@@ -150,13 +150,16 @@ function App() {
     const neglected = Object.entries(muscleLastTrained)
       .map(([muscle, lastDate]) => ({
         muscle,
-        days: Math.floor((new Date(today + 'T00:00:00') - lastDate) / (1000 * 60 * 60 * 24))
+        days: Math.floor((new Date(today + 'T00:00:00') - lastDate) / (1000 * 60 * 60 * 24)),
+        never: lastDate.getFullYear() === 2000
       }))
       .filter(m => m.days > 0)
       .sort((a, b) => b.days - a.days)[0];
 
     const recommendation = neglected ? {
       ...neglected,
+      message: neglected.never ? `Você ainda não treinou ` : `Você não treina `,
+      daysText: neglected.never ? `ainda` : `há ${neglected.days} ${neglected.days === 1 ? 'dia' : 'dias'}`,
       icon: {
         'peito': '💪', 'costas': '🔙', 'pernas': '🦵', 'ombros': '🙆',
         'biceps': '💪', 'triceps': '💪', 'abdomen': '🍫', 'cardio': '🏃',
@@ -254,9 +257,8 @@ function App() {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.2 }}
-              className="flex-1 flex flex-col justify-start gap-4 p-4 overflow-hidden"
+              className="flex-1 flex flex-col justify-start gap-2 p-3 overflow-hidden"
             >
-
               <ActivityRings
                 weeklyProgress={stats.weeklyPct}
                 monthlyProgress={stats.monthlyPct}

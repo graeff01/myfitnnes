@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 
 const ActivityRings = ({ weeklyProgress = 0, monthlyProgress = 0, streak = 0 }) => {
-    const ringSize = 175;
+    const ringSize = 155;
     const strokeWidth = 14;
     const center = ringSize / 2;
 
