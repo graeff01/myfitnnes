@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { muscleGroups } from './MuscleGroupSelector';
 
-const StatsCard = ({ monthlyStats, streak, weeklyGoal, weeklyProgress }) => {
+const StatsCard = ({ monthlyStats, streak, weeklyGoal, weeklyProgress, weightTrend }) => {
     const mostTrained = monthlyStats?.most_trained;
     const mostTrainedGroup = muscleGroups.find(g => g.id === mostTrained);
 
@@ -72,6 +72,26 @@ const StatsCard = ({ monthlyStats, streak, weeklyGoal, weeklyProgress }) => {
                     />
                 </div>
             </div>
+
+            {/* Weight Trend */}
+            {weightTrend && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="mt-3 pt-3 border-t border-white/5 flex items-center justify-between"
+                >
+                    <span className="text-[10px] text-text-secondary uppercase font-bold tracking-wider">Tendência de Peso</span>
+                    <span className={`text-xs font-bold flex items-center gap-1 ${weightTrend.direction === 'down' ? 'text-secondary' : 'text-primary'}`}>
+                        {weightTrend.isStable ? (
+                            'Estável ⚖️'
+                        ) : (
+                            <>
+                                {weightTrend.direction === 'down' ? '▼' : '▲'} {weightTrend.diff}kg nesta semana
+                            </>
+                        )}
+                    </span>
+                </motion.div>
+            )}
         </div>
     );
 };

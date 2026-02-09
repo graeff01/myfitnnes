@@ -11,6 +11,7 @@ import WorkoutModal from './components/WorkoutModal';
 import BottomNav from './components/BottomNav';
 import WorkoutSection from './components/WorkoutSection';
 import ProgressView from './components/ProgressView';
+import SmartTip from './components/SmartTip';
 import { Toaster, toast } from 'react-hot-toast';
 
 function App() {
@@ -19,6 +20,7 @@ function App() {
   const [showWorkoutModal, setShowWorkoutModal] = useState(false);
   const [selectedWorkout, setSelectedWorkout] = useState(null);
   const [weeklyStats, setWeeklyStats] = useState([]);
+  const [weightLogs, setWeightLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -28,12 +30,14 @@ function App() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [workoutsData, statsData] = await Promise.all([
+      const [workoutsData, statsData, weightData] = await Promise.all([
         api.getWorkouts(), // Fixed API name
-        api.getWeeklyStats()
+        api.getWeeklyStats(),
+        api.getWeightLogs(null, null, 14) // Last 14 logs for trend
       ]);
       setWorkouts(workoutsData);
       setWeeklyStats(statsData);
+      setWeightLogs(weightData);
     } catch (error) {
       console.error('Error loading data:', error);
       toast.error('Erro ao carregar dados');
@@ -48,7 +52,7 @@ function App() {
 
   // --- Statistics Calculation ---
   const stats = useMemo(() => {
-    if (!workouts.length) return { weeklyPct: 0, monthlyPct: 0, streak: 0, weeklyCount: 0, mostTrained: null };
+    if (!workouts.length) return { weeklyPct: 0, monthlyPct: 0, streak: 0, weeklyCount: 0, mostTrained: null, recommendation: null, weightTrend: null };
 
     const now = new Date();
     const today = now.toISOString().split('T')[0];
@@ -127,14 +131,69 @@ function App() {
     });
     const mostTrained = Object.entries(muscleMap).sort((a, b) => b[1] - a[1])[0]?.[0];
 
+    // 5. Neglected Muscle Groups
+    const allMuscleGroups = ['peito', 'costas', 'pernas', 'ombros', 'biceps', 'triceps', 'abdomen', 'cardio', 'alongamento'];
+    const muscleLastTrained = {};
+
+    // Initialize with far past
+    allMuscleGroups.forEach(g => muscleLastTrained[g] = new Date('2000-01-01'));
+
+    workouts.forEach(w => {
+      const wDate = new Date(w.date + 'T00:00:00');
+      w.muscle_groups.split(',').forEach(g => {
+        if (wDate > muscleLastTrained[g]) {
+          muscleLastTrained[g] = wDate;
+        }
+      });
+    });
+
+    const neglected = Object.entries(muscleLastTrained)
+      .map(([muscle, lastDate]) => ({
+        muscle,
+        days: Math.floor((new Date(today + 'T00:00:00') - lastDate) / (1000 * 60 * 60 * 24))
+      }))
+      .filter(m => m.days > 0)
+      .sort((a, b) => b.days - a.days)[0];
+
+    const recommendation = neglected ? {
+      ...neglected,
+      icon: {
+        'peito': '💪', 'costas': '🔙', 'pernas': '🦵', 'ombros': '🙆',
+        'biceps': '💪', 'triceps': '💪', 'abdomen': '🍫', 'cardio': '🏃',
+        'alongamento': '🧘'
+      }[neglected.muscle] || '💪'
+    } : null;
+
+    // 6. Weight Trend
+    let weightTrend = null;
+    if (weightLogs.length >= 2) {
+      const sortedWeights = [...weightLogs].sort((a, b) => new Date(b.date) - new Date(a.date));
+      const last7 = sortedWeights.slice(0, 7);
+      const prev7 = sortedWeights.slice(7, 14);
+
+      if (last7.length > 0 && prev7.length > 0) {
+        const avg7 = last7.reduce((acc, curr) => acc + curr.weight, 0) / last7.length;
+        const avgPrev = prev7.reduce((acc, curr) => acc + curr.weight, 0) / prev7.length;
+        const diff = avg7 - avgPrev;
+
+        weightTrend = {
+          diff: Math.abs(diff).toFixed(1),
+          direction: diff > 0 ? 'up' : 'down',
+          isStable: Math.abs(diff) < 0.1
+        };
+      }
+    }
+
     return {
       weeklyPct: weeklyProgressPct,
       monthlyPct: monthlyProgressPct,
       streak,
       weeklyCount: uniqueDaysWeek,
-      mostTrained
+      mostTrained,
+      recommendation,
+      weightTrend
     };
-  }, [workouts]);
+  }, [workouts, weightLogs]);
 
 
   const handleSaveWorkout = async (data) => {
@@ -209,7 +268,10 @@ function App() {
                 weeklyGoal={weeklyGoal}
                 weeklyProgress={stats.weeklyCount}
                 monthlyStats={{ most_trained: stats.mostTrained }}
+                weightTrend={stats.weightTrend}
               />
+
+              <SmartTip recommendation={stats.recommendation} />
 
               <HydrationCard />
             </motion.div>
