@@ -53,12 +53,14 @@ CREATE TABLE IF NOT EXISTS hydration_logs (
 
 -- User settings table
 CREATE TABLE IF NOT EXISTS settings (
-  id INTEGER PRIMARY KEY CHECK (id = 1),
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL UNIQUE,
   weekly_goal INTEGER DEFAULT 4,
   weight_unit TEXT DEFAULT 'kg',
   measurement_unit TEXT DEFAULT 'cm',
   created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-  updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
 -- Evolution photos table
@@ -80,22 +82,23 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
--- Insert default settings
-INSERT OR IGNORE INTO settings (id, weekly_goal, weight_unit, measurement_unit) 
-VALUES (1, 4, 'kg', 'cm');
+-- Remove old inserted settings (they will be created per user)
 
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_workouts_date ON workouts(date);
 CREATE INDEX IF NOT EXISTS idx_weight_logs_date ON weight_logs(date);
 CREATE INDEX IF NOT EXISTS idx_measurements_date ON measurements(date);
 CREATE INDEX IF NOT EXISTS idx_hydration_date ON hydration_logs(date);
+CREATE INDEX IF NOT EXISTS idx_workouts_user ON workouts(user_id);
 
 -- Monthly stats view
-CREATE VIEW IF NOT EXISTS monthly_stats AS
+DROP VIEW IF EXISTS monthly_stats;
+CREATE VIEW monthly_stats AS
 SELECT 
+  user_id,
   strftime('%Y-%m', date) as month,
   COUNT(*) as total_workouts,
   COUNT(DISTINCT date) as training_days,
   muscle_groups
 FROM workouts
-GROUP BY month;
+GROUP BY user_id, month;

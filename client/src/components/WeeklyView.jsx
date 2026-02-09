@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { muscleGroups } from './MuscleGroupSelector';
+import { formatDate } from '../services/api';
 
 const WeeklyView = ({ weeklyData = [], onDayClick }) => {
     const days = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
@@ -12,7 +13,7 @@ const WeeklyView = ({ weeklyData = [], onDayClick }) => {
             const date = new Date();
             date.setDate(date.getDate() - i);
             result.push({
-                date: date.toISOString().split('T')[0],
+                date: formatDate(date),
                 dayOfWeek: date.getDay(),
                 dayLabel: days[date.getDay()]
             });

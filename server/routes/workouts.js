@@ -265,7 +265,7 @@ router.get('/settings', async (req, res) => {
 });
 
 // Update user settings
-router.post('/settings', async (req, res) => {
+router.put('/settings', async (req, res) => {
     try {
         const { weekly_goal } = req.body;
         const userId = req.user.id;
@@ -289,8 +289,8 @@ router.post('/settings', async (req, res) => {
             `, [userId, weekly_goal]);
         }
 
-        const settings = await getAsync('SELECT * FROM settings WHERE user_id = ?', [userId]);
-        res.json(settings);
+        const updated = await getAsync('SELECT * FROM settings WHERE user_id = ?', [userId]);
+        res.json(updated);
     } catch (error) {
         console.error('Error updating settings:', error);
         res.status(500).json({ error: 'Failed to update settings' });

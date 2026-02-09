@@ -57,7 +57,7 @@ function App() {
     if (!workouts.length) return { weeklyPct: 0, monthlyPct: 0, streak: 0, weeklyCount: 0, mostTrained: null, recommendation: null, weightTrend: null };
 
     const now = new Date();
-    const today = now.toISOString().split('T')[0];
+    const today = api.formatDate(now);
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
 
@@ -107,7 +107,7 @@ function App() {
         // Check backwards
         for (let i = 1; i < sortedDates.length; i++) {
           const dStr = sortedDates[i];
-          const pStr = previousDate.toISOString().split('T')[0];
+          const pStr = api.formatDate(previousDate);
 
           if (dStr === pStr) {
             streak++;

@@ -92,7 +92,11 @@ export default function WorkoutSection({
                 >
                     <div className="flex justify-between items-center mb-4">
                         <h3 className="text-primary font-bold uppercase tracking-wider">
-                            {new Date(viewDate).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                            {(() => {
+                                const [year, month, day] = viewDate.split('-').map(Number);
+                                const date = new Date(year, month - 1, day);
+                                return date.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+                            })()}
                         </h3>
                         <button onClick={() => setViewDate(null)} className="text-text-secondary text-sm">
                             Fechar

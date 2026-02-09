@@ -1,5 +1,14 @@
 const API_BASE = import.meta.env.PROD ? '/api' : 'http://localhost:3000/api';
 
+// Helper to format date as YYYY-MM-DD (local time)
+export const formatDate = (date = new Date()) => {
+    const d = new Date(date);
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const year = d.getFullYear();
+    return `${year}-${month}-${day}`;
+};
+
 // Helper to get auth headers
 const getAuthHeaders = () => {
     const token = localStorage.getItem('myfit_token');
