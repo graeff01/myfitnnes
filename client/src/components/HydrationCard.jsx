@@ -16,8 +16,8 @@ const HydrationCard = () => {
             const date = api.formatDate();
             const data = await api.getHydration(date);
             if (data) {
-                setVolume(data.volume);
-                setGoal(data.goal || 2500);
+                setVolume(data.volume_ml || 0);
+                setGoal(data.goal_ml || 2500);
             } else {
                 // Initialize if no entries for today
                 setVolume(0);
