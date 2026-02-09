@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import * as api from '../services/api';
 import WeightModal from './WeightModal';
 import MeasurementsModal from './MeasurementsModal';
+import PhotoDetailModal from './PhotoDetailModal';
 
 const ProgressView = () => {
     const [weightLogs, setWeightLogs] = useState([]);
@@ -10,6 +11,8 @@ const ProgressView = () => {
     const [photos, setPhotos] = useState([]);
     const [showWeightModal, setShowWeightModal] = useState(false);
     const [showMeasurementsModal, setShowMeasurementsModal] = useState(false);
+    const [showPhotoModal, setShowPhotoModal] = useState(false);
+    const [selectedPhoto, setSelectedPhoto] = useState(null);
     const [activeChart, setActiveChart] = useState('weight'); // 'weight', 'measurements', or 'photos'
     const [uploading, setUploading] = useState(false);
 
@@ -360,14 +363,18 @@ const ProgressView = () => {
                                         initial={{ opacity: 0, scale: 0.9 }}
                                         animate={{ opacity: 1, scale: 1 }}
                                         transition={{ delay: index * 0.05 }}
-                                        className="relative group rounded-2xl overflow-hidden aspect-[3/4] bg-surface-light border border-white/5"
+                                        className="relative group rounded-2xl overflow-hidden aspect-[3/4] bg-surface-light border border-white/5 cursor-pointer"
+                                        onClick={() => {
+                                            setSelectedPhoto(photo);
+                                            setShowPhotoModal(true);
+                                        }}
                                     >
                                         <img
                                             src={photo.image_data}
                                             alt={photo.caption || 'Foto de evolução'}
-                                            className="w-full h-full object-cover"
+                                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                                         />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-3">
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-3 opacity-90 transition-opacity group-hover:opacity-100">
                                             <div className="flex items-center justify-between">
                                                 <div className="flex-1 min-w-0 pr-2">
                                                     <p className="text-[10px] text-text-secondary font-bold uppercase tracking-wider">{formatDate(photo.date)}</p>
@@ -375,12 +382,6 @@ const ProgressView = () => {
                                                         <p className="text-xs text-white font-medium line-clamp-1">{photo.caption}</p>
                                                     )}
                                                 </div>
-                                                <button
-                                                    onClick={() => handleDeletePhoto(photo.id)}
-                                                    className="p-1 px-2 bg-red-500/20 hover:bg-red-500/40 text-red-500 rounded-lg transition-colors flex-none"
-                                                >
-                                                    🗑️
-                                                </button>
                                             </div>
                                         </div>
                                     </motion.div>
@@ -401,6 +402,12 @@ const ProgressView = () => {
                 isOpen={showMeasurementsModal}
                 onClose={() => setShowMeasurementsModal(false)}
                 onSave={handleMeasurementsSave}
+            />
+            <PhotoDetailModal
+                isOpen={showPhotoModal}
+                photo={selectedPhoto}
+                onClose={() => setShowPhotoModal(false)}
+                onDelete={handleDeletePhoto}
             />
         </div>
     );
