@@ -50,23 +50,13 @@ router.post('/weight', async (req, res) => {
             return res.status(400).json({ error: 'Invalid weight value' });
         }
 
-        // Check if entry exists for this date
-        const existing = await getAsync('SELECT id FROM weight_logs WHERE date = ?', [date]);
-
-        if (existing) {
-            // Update existing
-            await runAsync('UPDATE weight_logs SET weight = ?, notes = ? WHERE date = ?', [weight, notes || null, date]);
-            const updated = await getAsync('SELECT * FROM weight_logs WHERE date = ?', [date]);
-            res.json(updated);
-        } else {
-            // Insert new
-            const result = await runAsync(
-                'INSERT INTO weight_logs (date, weight, notes) VALUES (?, ?, ?)',
-                [date, weight, notes || null]
-            );
-            const log = await getAsync('SELECT * FROM weight_logs WHERE id = ?', [result.lastID]);
-            res.status(201).json(log);
-        }
+        // Always insert new record (remove existing check to allow history)
+        const result = await runAsync(
+            'INSERT INTO weight_logs (date, weight, notes) VALUES (?, ?, ?)',
+            [date, weight, notes || null]
+        );
+        const log = await getAsync('SELECT * FROM weight_logs WHERE id = ?', [result.lastID]);
+        res.status(201).json(log);
     } catch (error) {
         console.error('Error logging weight:', error);
         res.status(500).json({ error: 'Failed to log weight' });
@@ -134,34 +124,15 @@ router.post('/measurements', async (req, res) => {
             return res.status(400).json({ error: 'Date is required' });
         }
 
-        // Check if entry exists for this date
-        const existing = await getAsync('SELECT id FROM measurements WHERE date = ?', [date]);
+        // Always insert new record (remove existing check to allow history)
+        const result = await runAsync(`
+            INSERT INTO measurements 
+            (date, chest, waist, hips, left_arm, right_arm, left_thigh, right_thigh, left_calf, right_calf, notes)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [date, chest, waist, hips, left_arm, right_arm, left_thigh, right_thigh, left_calf, right_calf, notes || null]);
 
-        if (existing) {
-            // Update existing
-            await runAsync(`
-        UPDATE measurements 
-        SET chest = ?, waist = ?, hips = ?, 
-            left_arm = ?, right_arm = ?, 
-            left_thigh = ?, right_thigh = ?,
-            left_calf = ?, right_calf = ?,
-            notes = ?
-        WHERE date = ?
-      `, [chest, waist, hips, left_arm, right_arm, left_thigh, right_thigh, left_calf, right_calf, notes || null, date]);
-
-            const updated = await getAsync('SELECT * FROM measurements WHERE date = ?', [date]);
-            res.json(updated);
-        } else {
-            // Insert new
-            const result = await runAsync(`
-        INSERT INTO measurements 
-        (date, chest, waist, hips, left_arm, right_arm, left_thigh, right_thigh, left_calf, right_calf, notes)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `, [date, chest, waist, hips, left_arm, right_arm, left_thigh, right_thigh, left_calf, right_calf, notes || null]);
-
-            const measurement = await getAsync('SELECT * FROM measurements WHERE id = ?', [result.lastID]);
-            res.status(201).json(measurement);
-        }
+        const measurement = await getAsync('SELECT * FROM measurements WHERE id = ?', [result.lastID]);
+        res.status(201).json(measurement);
     } catch (error) {
         console.error('Error logging measurements:', error);
         res.status(500).json({ error: 'Failed to log measurements' });

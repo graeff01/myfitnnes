@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS workouts (
 -- Weight tracking table
 CREATE TABLE IF NOT EXISTS weight_logs (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  date TEXT NOT NULL UNIQUE,
+  date TEXT NOT NULL,
   weight REAL NOT NULL,
   notes TEXT,
   created_at TEXT DEFAULT CURRENT_TIMESTAMP
@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS weight_logs (
 -- Body measurements table
 CREATE TABLE IF NOT EXISTS measurements (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  date TEXT NOT NULL UNIQUE,
+  date TEXT NOT NULL,
   chest REAL,
   waist REAL,
   hips REAL,

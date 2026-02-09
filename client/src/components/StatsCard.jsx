@@ -18,45 +18,51 @@ const StatsCard = ({ monthlyStats, streak, weeklyGoal, weeklyProgress, weightTre
             <div className="grid grid-cols-3 gap-2">
                 {/* Streak */}
                 <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="text-center"
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="text-center p-2 rounded-xl bg-surface-light/30 backdrop-blur-sm border border-white/5"
                 >
                     <div className="text-2xl font-bold text-tertiary mb-0.5">
                         {streak >= 7 ? '🔥' : '⚡'} {streak}
                     </div>
-                    <div className="text-xs text-text-secondary">
-                        Dias seguidos
+                    <div className="text-[10px] text-text-secondary uppercase font-bold">
+                        Streak
                     </div>
                 </motion.div>
 
                 {/* Most trained */}
                 <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                     transition={{ delay: 0.1 }}
-                    className="text-center"
+                    className="text-center p-2 rounded-xl bg-surface-light/30 backdrop-blur-sm border border-white/5"
                 >
                     <div className="text-2xl mb-0.5">
                         {mostTrainedGroup ? mostTrainedGroup.label.split(' ')[0] : '💪'}
                     </div>
-                    <div className="text-xs text-text-secondary">
-                        Mais treinado
+                    <div className="text-[10px] text-text-secondary uppercase font-bold">
+                        Mais Treinado
                     </div>
                 </motion.div>
 
                 {/* Weekly goal */}
                 <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                     transition={{ delay: 0.2 }}
-                    className="text-center"
+                    className="text-center p-2 rounded-xl bg-surface-light/30 backdrop-blur-sm border border-white/5"
                 >
                     <div className={`text-2xl font-bold mb-0.5 ${goalMet ? 'text-secondary' : 'text-text-primary'}`}>
                         {goalMet ? '✅' : '🎯'} {weeklyProgress}/{weeklyGoal}
                     </div>
-                    <div className="text-xs text-text-secondary">
-                        Meta semanal
+                    <div className="text-[10px] text-text-secondary uppercase font-bold">
+                        Meta
                     </div>
                 </motion.div>
             </div>
