@@ -11,7 +11,7 @@ import WorkoutModal from './components/WorkoutModal';
 import BottomNav from './components/BottomNav';
 import WorkoutSection from './components/WorkoutSection';
 import ProgressView from './components/ProgressView';
-import SmartTip from './components/SmartTip';
+// Import removed here, moved to WorkoutSection
 import { Toaster, toast } from 'react-hot-toast';
 
 function App() {
@@ -302,6 +302,7 @@ function App() {
                   weeklyStats={weeklyStats}
                   onEditWorkout={handleEditWorkout}
                   onDeleteWorkout={handleDeleteWorkout}
+                  recommendation={stats.recommendation} // Added
                 />
               </div>
 

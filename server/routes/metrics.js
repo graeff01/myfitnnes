@@ -156,4 +156,58 @@ router.delete('/measurements/:id', async (req, res) => {
     }
 });
 
+// ============================================
+// EVOLUTION PHOTOS ROUTES
+// ============================================
+
+// Get all photos
+router.get('/photos', async (req, res) => {
+    try {
+        const query = 'SELECT * FROM evolution_photos ORDER BY date DESC';
+        const photos = await allAsync(query);
+        res.json(photos);
+    } catch (error) {
+        console.error('Error fetching photos:', error);
+        res.status(500).json({ error: 'Failed to fetch photos' });
+    }
+});
+
+// Log photo
+router.post('/photos', async (req, res) => {
+    try {
+        const { date, image_data, caption } = req.body;
+
+        if (!date || !image_data) {
+            return res.status(400).json({ error: 'Date and image_data are required' });
+        }
+
+        const result = await runAsync(
+            'INSERT INTO evolution_photos (date, image_data, caption) VALUES (?, ?, ?)',
+            [date, image_data, caption || null]
+        );
+        const photo = await getAsync('SELECT * FROM evolution_photos WHERE id = ?', [result.lastID]);
+        res.status(201).json(photo);
+    } catch (error) {
+        console.error('Error logging photo:', error);
+        res.status(500).json({ error: 'Failed to log photo' });
+    }
+});
+
+// Delete photo
+router.delete('/photos/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const result = await runAsync('DELETE FROM evolution_photos WHERE id = ?', [id]);
+
+        if (result.changes === 0) {
+            return res.status(404).json({ error: 'Photo not found' });
+        }
+
+        res.json({ message: 'Photo deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting photo:', error);
+        res.status(500).json({ error: 'Failed to delete photo' });
+    }
+});
+
 module.exports = router;

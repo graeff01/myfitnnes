@@ -52,6 +52,15 @@ CREATE TABLE IF NOT EXISTS settings (
   updated_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Evolution photos table
+CREATE TABLE IF NOT EXISTS evolution_photos (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  date TEXT NOT NULL,
+  image_data TEXT NOT NULL, -- Base64
+  caption TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Insert default settings
 INSERT OR IGNORE INTO settings (id, weekly_goal, weight_unit, measurement_unit) 
 VALUES (1, 4, 'kg', 'cm');

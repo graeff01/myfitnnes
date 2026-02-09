@@ -223,6 +223,43 @@ export const getHydration = async (date) => {
     return response.json();
 };
 
+// Evolution Photos
+export const getPhotos = async () => {
+    try {
+        const response = await fetch(`${API_BASE}/metrics/photos`);
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching photos:', error);
+        throw error;
+    }
+};
+
+export const uploadPhoto = async (photoData) => {
+    try {
+        const response = await fetch(`${API_BASE}/metrics/photos`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(photoData)
+        });
+        return await response.json();
+    } catch (error) {
+        console.error('Error uploading photo:', error);
+        throw error;
+    }
+};
+
+export const deletePhoto = async (id) => {
+    try {
+        const response = await fetch(`${API_BASE}/metrics/photos/${id}`, {
+            method: 'DELETE'
+        });
+        return await response.json();
+    } catch (error) {
+        console.error('Error deleting photo:', error);
+        throw error;
+    }
+};
+
 export const logHydration = async (arg1, arg2, arg3) => {
     let date, volume_ml, goal_ml;
 

@@ -3,12 +3,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import WeeklyView from './WeeklyView';
 import MonthlyView from './MonthlyView';
 import WorkoutHistory from './WorkoutHistory';
+import SmartTip from './SmartTip';
 
 export default function WorkoutSection({
     workouts,
     weeklyStats,
     onEditWorkout,
-    onDeleteWorkout
+    onDeleteWorkout,
+    recommendation // Added
 }) {
     const [viewMode, setViewMode] = useState('week'); // week, month, list
     const [viewDate, setViewDate] = useState(null);
@@ -19,6 +21,9 @@ export default function WorkoutSection({
 
     return (
         <div className="flex-1 flex flex-col overflow-hidden space-y-4">
+            {/* Enhanced Smart Recommendation */}
+            <SmartTip recommendation={recommendation} />
+
             {/* Header / Tabs */}
             <div className="flex bg-surface-light p-1 rounded-xl">
                 {['week', 'month', 'list'].map((mode) => (
