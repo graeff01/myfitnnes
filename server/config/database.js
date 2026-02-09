@@ -12,16 +12,22 @@ const db = new sqlite3.Database(dbPath, async (err) => {
     } else {
         console.log('✅ Database connected successfully');
 
-        // Initialize schema
-        const schema = fs.readFileSync(schemaPath, 'utf8');
-        db.exec(schema, async (err) => {
-            if (err) {
-                console.error('Error initializing schema:', err);
-            } else {
-                console.log('✅ Database schema checked');
-                await runMigrations();
-            }
-        });
+        try {
+            // 1. Run migrations first to ensure structure is ready (user_id columns added)
+            await runMigrations();
+
+            // 2. Then ensure full schema (views, indexes, etc)
+            const schema = fs.readFileSync(schemaPath, 'utf8');
+            db.exec(schema, (err) => {
+                if (err) {
+                    console.error('Error enforcing schema:', err.message);
+                } else {
+                    console.log('✅ Database schema enforced (Views/Indexes ready)');
+                }
+            });
+        } catch (err) {
+            console.error('Critical failure during database initialization:', err);
+        }
     }
 });
 
