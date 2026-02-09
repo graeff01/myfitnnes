@@ -1,5 +1,6 @@
 import React from 'react';
 import { Home, Dumbbell, LineChart, User } from 'lucide-react';
+import * as api from '../services/api';
 
 export default function BottomNav({ activeTab, setActiveTab }) {
     const navItems = [

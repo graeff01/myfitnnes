@@ -1,3 +1,13 @@
+PRAGMA foreign_keys = ON;
+
+-- Users table (MUST BE FIRST)
+CREATE TABLE IF NOT EXISTS users (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  username TEXT NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Workouts table
 CREATE TABLE IF NOT EXISTS workouts (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -39,7 +49,7 @@ CREATE TABLE IF NOT EXISTS measurements (
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
--- Hydration logs table (Updated to ML)
+-- Hydration logs table
 CREATE TABLE IF NOT EXISTS hydration_logs (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL,
@@ -68,21 +78,11 @@ CREATE TABLE IF NOT EXISTS evolution_photos (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL,
   date TEXT NOT NULL,
-  image_data TEXT NOT NULL, -- Base64
+  image_data TEXT NOT NULL,
   caption TEXT,
   created_at TEXT DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
-
--- Users table
-CREATE TABLE IF NOT EXISTS users (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  username TEXT NOT NULL UNIQUE,
-  password_hash TEXT NOT NULL,
-  created_at TEXT DEFAULT CURRENT_TIMESTAMP
-);
-
--- Remove old inserted settings (they will be created per user)
 
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_workouts_date ON workouts(date);

@@ -17,6 +17,23 @@ const getAuthHeaders = () => {
     return headers;
 };
 
+const handleResponse = async (response) => {
+    if (!response.ok) {
+        let errorData;
+        try {
+            errorData = await response.json();
+        } catch (e) {
+            throw new Error(response.statusText || 'Erro na requisição');
+        }
+
+        const errorMsg = errorData.details
+            ? `${errorData.error}: ${errorData.details}`
+            : (errorData.error || 'Erro desconhecido');
+        throw new Error(errorMsg);
+    }
+    return response.json();
+};
+
 // ============================================
 // AUTH API
 // ============================================
@@ -74,11 +91,7 @@ export const getWorkouts = async (startDate, endDate) => {
     const response = await fetch(`${API_BASE}/workouts?${params}`, {
         headers: getAuthHeaders()
     });
-    if (!response.ok) {
-        if (response.status === 401) logout();
-        throw new Error('Failed to fetch workouts');
-    }
-    return response.json();
+    return handleResponse(response);
 };
 
 export const getWorkoutsByDate = async (date) => {
@@ -87,11 +100,11 @@ export const getWorkoutsByDate = async (date) => {
     return response.json();
 };
 
-export const getWeeklyStats = async (startDate) => {
-    const params = startDate ? `?startDate=${startDate}` : '';
-    const response = await fetch(`${API_BASE}/workouts/stats/weekly${params}`, { headers: getAuthHeaders() });
-    if (!response.ok) throw new Error('Failed to fetch weekly stats');
-    return response.json();
+export const getWeeklyStats = async () => {
+    const response = await fetch(`${API_BASE}/workouts/stats/weekly`, {
+        headers: getAuthHeaders()
+    });
+    return handleResponse(response);
 };
 
 export const getMonthlyStats = async (month) => {

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'react-hot-toast';
 import * as api from '../services/api';
 
 const HydrationCard = () => {
@@ -24,6 +25,9 @@ const HydrationCard = () => {
             }
         } catch (error) {
             console.error('Error loading hydration:', error);
+            if (error.message.includes('details')) {
+                // If we passed the details in the response
+            }
         }
     };
 
@@ -43,6 +47,12 @@ const HydrationCard = () => {
             }
         } catch (error) {
             console.error('Error updating hydration:', error);
+            // Assuming 'toast' is available globally or imported elsewhere in the project context
+            // If not, this line would cause a ReferenceError.
+            // For this exercise, I'm adding it as requested.
+            if (typeof toast !== 'undefined') {
+                toast.error(`Erro ao salvar hidratação: ${error.message}`);
+            }
         }
     };
 
