@@ -13,41 +13,47 @@ export const muscleGroups = [
     { id: 'alongamento', label: 'Flex', icon: '🧘', color: '14B8A6' }
 ];
 
-const MuscleGroupSelector = ({ onConfirm, isLoading, initialSelected = [] }) => {
-    const [selectedGroups, setSelectedGroups] = useState(initialSelected);
+const MuscleGroupSelector = ({
+    onConfirm,
+    isLoading,
+    initialSelected = [],
+    selected,        // Support controlled mode
+    onChange         // Support controlled mode
+}) => {
+    // Internal state only used if controlled props are not provided
+    const [internalSelected, setInternalSelected] = useState(initialSelected);
     const [notes, setNotes] = useState('');
-    const [showConfirmation, setShowConfirmation] = useState(false);
 
-    // Initialize state from props
-    useEffect(() => {
-        if (initialSelected.length > 0) {
-            setSelectedGroups(initialSelected);
-        }
-    }, [initialSelected]);
+    // Determine which state to use
+    const activeSelected = selected !== undefined ? selected : internalSelected;
 
     const toggleGroup = (id) => {
-        setSelectedGroups(prev => {
-            const newSelection = prev.includes(id)
-                ? prev.filter(g => g !== id)
-                : [...prev, id];
+        const newSelection = activeSelected.includes(id)
+            ? activeSelected.filter(g => g !== id)
+            : [...activeSelected, id];
 
-            // Haptic feedback
-            if (navigator.vibrate) {
-                navigator.vibrate(10);
-            }
+        // Haptic feedback
+        if (navigator.vibrate) {
+            navigator.vibrate(10);
+        }
 
-            return newSelection;
-        });
+        if (onChange) {
+            onChange(newSelection);
+        } else {
+            setInternalSelected(newSelection);
+        }
     };
 
     const handleConfirm = () => {
-        if (selectedGroups.length === 0) return;
-        onConfirm(selectedGroups, notes);
-        // Reset if not editing (handled by parent usually, but good practice)
-        if (initialSelected.length === 0) {
-            setSelectedGroups([]);
+        if (activeSelected.length === 0) return;
+        if (onConfirm) {
+            onConfirm(activeSelected, notes);
+        }
+
+        // Reset if not in a modal/editing context
+        if (!selected && !onChange) {
+            setInternalSelected([]);
             setNotes('');
-            setShowConfirmation(false);
         }
     };
 
@@ -56,10 +62,11 @@ const MuscleGroupSelector = ({ onConfirm, isLoading, initialSelected = [] }) => 
             {/* Grid of Muscle Groups */}
             <div className="grid grid-cols-3 gap-3">
                 {muscleGroups.map((group) => {
-                    const isSelected = selectedGroups.includes(group.id);
+                    const isSelected = activeSelected.includes(group.id);
                     return (
                         <motion.button
                             key={group.id}
+                            type="button" // Important inside forms
                             whileTap={{ scale: 0.95 }}
                             onClick={() => toggleGroup(group.id)}
                             className={`
@@ -94,65 +101,63 @@ const MuscleGroupSelector = ({ onConfirm, isLoading, initialSelected = [] }) => 
                 })}
             </div>
 
-            {/* Selected Groups Summary & Notes */}
-            <AnimatePresence>
-                {selectedGroups.length > 0 && (
-                    <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="space-y-4 overflow-hidden"
-                    >
-                        {/* Notes Input */}
-                        <div className="bg-surface-light rounded-2xl p-4 border border-white/5">
-                            <label className="block text-xs font-bold text-text-secondary mb-2 uppercase tracking-wider">
-                                Notas do Treino
-                            </label>
-                            <input
-                                type="text"
-                                value={notes}
-                                onChange={(e) => setNotes(e.target.value)}
-                                placeholder="Ex: Cargas aumentadas, foco em..."
-                                className="w-full bg-surface border-none rounded-xl px-4 py-3 text-text-primary placeholder-text-secondary/50 focus:ring-2 focus:ring-primary focus:outline-none transition-all"
-                            />
-                        </div>
+            {/* Sub-actions for standalone mode */}
+            {!onChange && activeSelected.length > 0 && (
+                <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="space-y-4 overflow-hidden"
+                >
+                    {/* Notes Input */}
+                    <div className="bg-surface-light rounded-2xl p-4 border border-white/5">
+                        <label className="block text-xs font-bold text-text-secondary mb-2 uppercase tracking-wider">
+                            Notas do Treino
+                        </label>
+                        <input
+                            type="text"
+                            value={notes}
+                            onChange={(e) => setNotes(e.target.value)}
+                            placeholder="Ex: Cargas aumentadas, foco em..."
+                            className="w-full bg-surface border-none rounded-xl px-4 py-3 text-text-primary placeholder-text-secondary/50 focus:ring-2 focus:ring-primary focus:outline-none transition-all"
+                        />
+                    </div>
 
-                        {/* Confirm Button */}
-                        <motion.button
-                            initial={{ y: 20, opacity: 0 }}
-                            animate={{ y: 0, opacity: 1 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={handleConfirm}
-                            disabled={isLoading}
-                            className={`
+                    {/* Confirm Button */}
+                    <motion.button
+                        initial={{ y: 20, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={handleConfirm}
+                        disabled={isLoading}
+                        className={`
                 w-full py-4 rounded-2xl font-bold text-lg tracking-wide
                 flex items-center justify-center gap-2
                 shadow-lg shadow-primary/20
                 ${isLoading
-                                    ? 'bg-surface text-text-secondary cursor-not-allowed'
-                                    : 'bg-primary text-white hover:bg-primary-dark'}
+                                ? 'bg-surface text-text-secondary cursor-not-allowed'
+                                : 'bg-primary text-white hover:bg-primary-dark'}
               `}
-                        >
-                            {isLoading ? (
-                                <span className="flex items-center gap-2">
-                                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                                    </svg>
-                                    SALVANDO...
-                                </span>
-                            ) : (
-                                <>
-                                    CONFIRMAR TREINO ({selectedGroups.length})
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                    </svg>
-                                </>
-                            )}
-                        </motion.button>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                    >
+                        {isLoading ? (
+                            <span className="flex items-center gap-2">
+                                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                </svg>
+                                SALVANDO...
+                            </span>
+                        ) : (
+                            <>
+                                CONFIRMAR TREINO ({activeSelected.length})
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                            </>
+                        )}
+                    </motion.button>
+                </motion.div>
+            )}
         </div>
     );
 };
