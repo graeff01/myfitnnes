@@ -7,17 +7,10 @@ export default function BottomNav({ activeTab, setActiveTab }) {
         { id: 'home', icon: Home, label: 'Início' },
         { id: 'workouts', icon: Dumbbell, label: 'Treinos' },
         { id: 'progress', icon: LineChart, label: 'Progresso' },
-        { id: 'logout', icon: User, label: 'Sair' }
+        { id: 'profile', icon: User, label: 'Perfil' }
     ];
 
     const handleNavClick = (id) => {
-        if (id === 'logout') {
-            if (window.confirm('Deseja realmente sair?')) {
-                api.logout();
-                window.location.reload(); // Quick way to trigger auth check in App.jsx
-            }
-            return;
-        }
         setActiveTab(id);
     };
 

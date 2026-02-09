@@ -1,7 +1,4 @@
-import { LogOut } from 'lucide-react';
-import * as api from '../services/api';
-
-export default function Header({ title = "MyFit", subtitle = "Sua jornada diária", onLogout }) {
+export default function Header({ title = "MyFit", subtitle = "Sua jornada diária" }) {
     return (
         <div className="flex justify-between items-center mb-3">
             <div>
@@ -12,20 +9,8 @@ export default function Header({ title = "MyFit", subtitle = "Sua jornada diári
                     {subtitle}
                 </p>
             </div>
-            <div className="flex items-center gap-3">
-                <button
-                    onClick={() => {
-                        api.logout();
-                        if (onLogout) onLogout();
-                    }}
-                    className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-zinc-400 hover:text-red-400 hover:bg-red-400/10 transition-all"
-                    title="Sair"
-                >
-                    <LogOut className="w-5 h-5" />
-                </button>
-                <div className="w-10 h-10 rounded-full bg-surface-light border border-white/10 flex items-center justify-center">
-                    <span className="text-lg">🏋️‍♂️</span>
-                </div>
+            <div className="w-10 h-10 rounded-full bg-surface-light border border-white/10 flex items-center justify-center">
+                <span className="text-lg">🏋️‍♂️</span>
             </div>
         </div>
     );

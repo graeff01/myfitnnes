@@ -13,6 +13,7 @@ import WorkoutSection from './components/WorkoutSection';
 import ProgressView from './components/ProgressView';
 import { Toaster, toast } from 'react-hot-toast';
 import Login from './components/Login';
+import ProfileView from './components/ProfileView';
 
 function App() {
   const [activeTab, setActiveTab] = useState('home');
@@ -339,6 +340,26 @@ function App() {
               <div className="flex-1 overflow-hidden mt-2">
                 <ProgressView />
               </div>
+            </motion.div>
+          )}
+
+          {activeTab === 'profile' && (
+            <motion.div
+              key="profile"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              className="flex-1 flex flex-col overflow-hidden"
+            >
+              <ProfileView
+                stats={{
+                  totalWorkouts: workouts.length,
+                  streak: stats.streak,
+                  monthlyGoals: stats.weeklyPct >= 100 ? 1 : 0 // Simplified for now
+                }}
+                onLogout={() => setIsAuthenticated(false)}
+              />
             </motion.div>
           )}
         </AnimatePresence>
