@@ -277,10 +277,6 @@ function App() {
                 />
               </div>
 
-              <div className="flex-none px-1">
-                <SmartTip recommendation={stats.recommendation} />
-              </div>
-
               <div className="flex-1 min-h-0 px-1 overflow-hidden">
                 <HydrationCard />
               </div>
