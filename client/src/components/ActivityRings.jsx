@@ -102,7 +102,7 @@ const ActivityRings = ({ weeklyProgress = 0, monthlyProgress = 0, streak = 0 }) 
                         transition={{ delay: 0.6 }}
                         className="text-center"
                     >
-                        <div className="text-4xl font-black text-text-primary">{Math.round(monthlyProgress)}%</div>
+                        <div className="text-2xl font-black text-text-primary">{Math.round(monthlyProgress)}%</div>
                         <div className="text-[10px] text-text-secondary font-bold uppercase tracking-widest mt-0.5">Mês</div>
                     </motion.div>
                 </div>
