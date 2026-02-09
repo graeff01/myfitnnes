@@ -14,10 +14,12 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 const workoutsRouter = require('./routes/workouts');
 const metricsRouter = require('./routes/metrics');
 const hydrationRouter = require('./routes/hydration');
+const authRouter = require('./routes/auth');
 
 app.use('/api/workouts', workoutsRouter);
 app.use('/api/metrics', metricsRouter);
 app.use('/api/hydration', hydrationRouter);
+app.use('/api/auth', authRouter);
 
 // Health check
 app.get('/api/health', (req, res) => {

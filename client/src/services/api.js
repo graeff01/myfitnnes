@@ -1,8 +1,56 @@
 const API_BASE = import.meta.env.PROD ? '/api' : 'http://localhost:3000/api';
 
-// Helper to format dates as YYYY-MM-DD
-export const formatDate = (date = new Date()) => {
-    return date.toISOString().split('T')[0];
+// Helper to get auth headers
+const getAuthHeaders = () => {
+    const token = localStorage.getItem('myfit_token');
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    return headers;
+};
+
+// ============================================
+// AUTH API
+// ============================================
+
+export const login = async (username, password) => {
+    const response = await fetch(`${API_BASE}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+    });
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to login');
+    }
+    const data = await response.json();
+    localStorage.setItem('myfit_token', data.token);
+    localStorage.setItem('myfit_user', JSON.stringify(data.user));
+    return data;
+};
+
+export const register = async (username, password) => {
+    const response = await fetch(`${API_BASE}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+    });
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to register');
+    }
+    const data = await response.json();
+    localStorage.setItem('myfit_token', data.token);
+    localStorage.setItem('myfit_user', JSON.stringify(data.user));
+    return data;
+};
+
+export const logout = () => {
+    localStorage.removeItem('myfit_token');
+    localStorage.removeItem('myfit_user');
+};
+
+export const isAuthenticated = () => {
+    return !!localStorage.getItem('myfit_token');
 };
 
 // ============================================
@@ -14,33 +62,38 @@ export const getWorkouts = async (startDate, endDate) => {
     if (startDate) params.append('startDate', startDate);
     if (endDate) params.append('endDate', endDate);
 
-    const response = await fetch(`${API_BASE}/workouts?${params}`);
-    if (!response.ok) throw new Error('Failed to fetch workouts');
+    const response = await fetch(`${API_BASE}/workouts?${params}`, {
+        headers: getAuthHeaders()
+    });
+    if (!response.ok) {
+        if (response.status === 401) logout();
+        throw new Error('Failed to fetch workouts');
+    }
     return response.json();
 };
 
 export const getWorkoutsByDate = async (date) => {
-    const response = await fetch(`${API_BASE}/workouts/date/${date}`);
+    const response = await fetch(`${API_BASE}/workouts/date/${date}`, { headers: getAuthHeaders() });
     if (!response.ok) throw new Error('Failed to fetch workouts');
     return response.json();
 };
 
 export const getWeeklyStats = async (startDate) => {
     const params = startDate ? `?startDate=${startDate}` : '';
-    const response = await fetch(`${API_BASE}/workouts/stats/weekly${params}`);
+    const response = await fetch(`${API_BASE}/workouts/stats/weekly${params}`, { headers: getAuthHeaders() });
     if (!response.ok) throw new Error('Failed to fetch weekly stats');
     return response.json();
 };
 
 export const getMonthlyStats = async (month) => {
     const params = month ? `?month=${month}` : '';
-    const response = await fetch(`${API_BASE}/workouts/stats/monthly${params}`);
+    const response = await fetch(`${API_BASE}/workouts/stats/monthly${params}`, { headers: getAuthHeaders() });
     if (!response.ok) throw new Error('Failed to fetch monthly stats');
     return response.json();
 };
 
 export const getStreak = async () => {
-    const response = await fetch(`${API_BASE}/workouts/stats/streak`);
+    const response = await fetch(`${API_BASE}/workouts/stats/streak`, { headers: getAuthHeaders() });
     if (!response.ok) throw new Error('Failed to fetch streak');
     return response.json();
 };
@@ -61,7 +114,7 @@ export const logWorkout = async (arg1, arg2, arg3) => {
 
     const response = await fetch(`${API_BASE}/workouts`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
             date,
             muscle_groups: Array.isArray(muscle_groups) ? muscle_groups : [muscle_groups],
@@ -86,7 +139,7 @@ export const updateWorkout = async (id, arg1, arg2) => {
 
     const response = await fetch(`${API_BASE}/workouts/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
             muscle_groups: Array.isArray(muscle_groups) ? muscle_groups : [muscle_groups],
             notes
@@ -99,7 +152,8 @@ export const updateWorkout = async (id, arg1, arg2) => {
 
 export const deleteWorkout = async (id) => {
     const response = await fetch(`${API_BASE}/workouts/${id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: getAuthHeaders()
     });
 
     if (!response.ok) throw new Error('Failed to delete workout');
@@ -107,7 +161,7 @@ export const deleteWorkout = async (id) => {
 };
 
 export const getSettings = async () => {
-    const response = await fetch(`${API_BASE}/workouts/settings`);
+    const response = await fetch(`${API_BASE}/workouts/settings`, { headers: getAuthHeaders() });
     if (!response.ok) throw new Error('Failed to fetch settings');
     return response.json();
 };
@@ -115,7 +169,7 @@ export const getSettings = async () => {
 export const updateSettings = async (weeklyGoal) => {
     const response = await fetch(`${API_BASE}/workouts/settings`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ weekly_goal: weeklyGoal })
     });
 
@@ -133,7 +187,7 @@ export const getWeightLogs = async (startDate, endDate, limit) => {
     if (endDate) params.append('endDate', endDate);
     if (limit) params.append('limit', limit);
 
-    const response = await fetch(`${API_BASE}/metrics/weight?${params}`);
+    const response = await fetch(`${API_BASE}/metrics/weight?${params}`, { headers: getAuthHeaders() });
     if (!response.ok) throw new Error('Failed to fetch weight logs');
     return response.json();
 };
@@ -151,7 +205,7 @@ export const logWeight = async (arg1, arg2, arg3) => {
 
     const response = await fetch(`${API_BASE}/metrics/weight`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ date, weight, notes })
     });
 
@@ -161,7 +215,8 @@ export const logWeight = async (arg1, arg2, arg3) => {
 
 export const deleteWeightLog = async (id) => {
     const response = await fetch(`${API_BASE}/metrics/weight/${id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: getAuthHeaders()
     });
 
     if (!response.ok) throw new Error('Failed to delete weight log');
@@ -178,7 +233,7 @@ export const getMeasurements = async (startDate, endDate, limit) => {
     if (endDate) params.append('endDate', endDate);
     if (limit) params.append('limit', limit);
 
-    const response = await fetch(`${API_BASE}/metrics/measurements?${params}`);
+    const response = await fetch(`${API_BASE}/metrics/measurements?${params}`, { headers: getAuthHeaders() });
     if (!response.ok) throw new Error('Failed to fetch measurements');
     return response.json();
 };
@@ -196,7 +251,7 @@ export const logMeasurements = async (arg1, arg2, arg3) => {
 
     const response = await fetch(`${API_BASE}/metrics/measurements`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ date, ...measurements, notes })
     });
 
@@ -206,7 +261,8 @@ export const logMeasurements = async (arg1, arg2, arg3) => {
 
 export const deleteMeasurement = async (id) => {
     const response = await fetch(`${API_BASE}/metrics/measurements/${id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: getAuthHeaders()
     });
 
     if (!response.ok) throw new Error('Failed to delete measurement');
@@ -218,7 +274,7 @@ export const deleteMeasurement = async (id) => {
 // ============================================
 
 export const getHydration = async (date) => {
-    const response = await fetch(`${API_BASE}/hydration/${date}`);
+    const response = await fetch(`${API_BASE}/hydration/${date}`, { headers: getAuthHeaders() });
     if (!response.ok) throw new Error('Failed to fetch hydration');
     return response.json();
 };
@@ -226,7 +282,7 @@ export const getHydration = async (date) => {
 // Evolution Photos
 export const getPhotos = async () => {
     try {
-        const response = await fetch(`${API_BASE}/metrics/photos`);
+        const response = await fetch(`${API_BASE}/metrics/photos`, { headers: getAuthHeaders() });
         return await response.json();
     } catch (error) {
         console.error('Error fetching photos:', error);
@@ -238,7 +294,7 @@ export const uploadPhoto = async (photoData) => {
     try {
         const response = await fetch(`${API_BASE}/metrics/photos`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(),
             body: JSON.stringify(photoData)
         });
         return await response.json();
@@ -251,7 +307,8 @@ export const uploadPhoto = async (photoData) => {
 export const deletePhoto = async (id) => {
     try {
         const response = await fetch(`${API_BASE}/metrics/photos/${id}`, {
-            method: 'DELETE'
+            method: 'DELETE',
+            headers: getAuthHeaders()
         });
         return await response.json();
     } catch (error) {
@@ -275,7 +332,7 @@ export const logHydration = async (arg1, arg2, arg3) => {
 
     const response = await fetch(`${API_BASE}/hydration`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ date, volume_ml, goal_ml })
     });
 

@@ -12,7 +12,7 @@ import BottomNav from './components/BottomNav';
 import WorkoutSection from './components/WorkoutSection';
 import ProgressView from './components/ProgressView';
 // Import removed here, moved to WorkoutSection
-import { Toaster, toast } from 'react-hot-toast';
+import Login from './components/Login';
 
 function App() {
   const [activeTab, setActiveTab] = useState('home');
@@ -23,11 +23,13 @@ function App() {
   const [weightLogs, setWeightLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [isAuthenticated, setIsAuthenticated] = useState(api.isAuthenticated());
 
   // User Settings
   const weeklyGoal = 4;
 
   const loadData = async () => {
+    if (!isAuthenticated) return;
     try {
       setLoading(true);
       const [workoutsData, statsData, weightData] = await Promise.all([
@@ -234,6 +236,15 @@ function App() {
     setShowWorkoutModal(true);
   };
 
+  if (!isAuthenticated) {
+    return (
+      <>
+        <Toaster position="top-center" />
+        <Login onLoginSuccess={() => setIsAuthenticated(true)} />
+      </>
+    );
+  }
+
   return (
     <div className="h-[100dvh] bg-background flex flex-col overflow-hidden">
       <div className="max-w-md mx-auto relative w-full h-full flex flex-col overflow-hidden">
@@ -248,6 +259,10 @@ function App() {
             }
           }}
         />
+
+        <div className="p-4 pb-0">
+          <Header onLogout={() => setIsAuthenticated(false)} />
+        </div>
 
         <AnimatePresence mode="wait">
           {activeTab === 'home' && (
@@ -344,7 +359,7 @@ function App() {
           initialData={selectedWorkout}
         />
       </div>
-    </div>
+    </div >
   );
 }
 

@@ -1,6 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const { getAsync, runAsync } = require('../config/database');
+const authenticateToken = require('../middleware/auth');
+
+router.use(authenticateToken);
 
 // Get hydration for a specific date
 router.get('/:date', async (req, res) => {

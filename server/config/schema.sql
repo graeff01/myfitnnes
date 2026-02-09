@@ -61,6 +61,14 @@ CREATE TABLE IF NOT EXISTS evolution_photos (
   created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Users table
+CREATE TABLE IF NOT EXISTS users (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  username TEXT NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Insert default settings
 INSERT OR IGNORE INTO settings (id, weekly_goal, weight_unit, measurement_unit) 
 VALUES (1, 4, 'kg', 'cm');

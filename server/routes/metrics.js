@@ -1,6 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const { allAsync, getAsync, runAsync } = require('../config/database');
+const authenticateToken = require('../middleware/auth');
+
+router.use(authenticateToken);
 
 // ============================================
 // WEIGHT TRACKING ROUTES
