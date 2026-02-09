@@ -1,14 +1,14 @@
 import { motion } from 'framer-motion';
 
 const ActivityRings = ({ weeklyProgress = 0, monthlyProgress = 0, streak = 0 }) => {
-    const ringSize = 155;
-    const strokeWidth = 14;
+    const ringSize = 170; // Slightly larger for readability
+    const strokeWidth = 16; // Beefier rings
     const center = ringSize / 2;
 
     // Calculate ring radii
-    const outerRadius = center - strokeWidth / 2 - 5;
-    const middleRadius = outerRadius - strokeWidth - 8;
-    const innerRadius = middleRadius - strokeWidth - 8;
+    const outerRadius = center - strokeWidth / 2 - 2;
+    const middleRadius = outerRadius - strokeWidth - 6;
+    const innerRadius = middleRadius - strokeWidth - 6;
 
     // Calculate circumferences
     const outerCircumference = 2 * Math.PI * outerRadius;
@@ -95,15 +95,15 @@ const ActivityRings = ({ weeklyProgress = 0, monthlyProgress = 0, streak = 0 }) 
                 </svg>
 
                 {/* Center Text */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                     <motion.div
                         initial={{ opacity: 0, scale: 0.8 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: 0.6 }}
                         className="text-center"
                     >
-                        <div className="text-3xl font-bold">{Math.round(monthlyProgress)}%</div>
-                        <div className="text-[10px] text-text-secondary mt-0.5">Este mês</div>
+                        <div className="text-4xl font-black text-text-primary">{Math.round(monthlyProgress)}%</div>
+                        <div className="text-[10px] text-text-secondary font-bold uppercase tracking-widest mt-0.5">Mês</div>
                     </motion.div>
                 </div>
             </div>

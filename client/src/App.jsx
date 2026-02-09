@@ -253,29 +253,37 @@ function App() {
           {activeTab === 'home' && (
             <motion.div
               key="home"
-              initial={{ opacity: 0, scale: 0.95 }}
+              initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
+              exit={{ opacity: 0, scale: 0.98 }}
               transition={{ duration: 0.2 }}
-              className="flex-1 flex flex-col justify-start gap-2 p-3 overflow-hidden"
+              className="flex-1 flex flex-col justify-start gap-1 p-2 pb-24 overflow-hidden h-full"
             >
-              <ActivityRings
-                weeklyProgress={stats.weeklyPct}
-                monthlyProgress={stats.monthlyPct}
-                streak={stats.streak}
-              />
+              <div className="flex-none pt-2">
+                <ActivityRings
+                  weeklyProgress={stats.weeklyPct}
+                  monthlyProgress={stats.monthlyPct}
+                  streak={stats.streak}
+                />
+              </div>
 
-              <StatsCard
-                streak={stats.streak}
-                weeklyGoal={weeklyGoal}
-                weeklyProgress={stats.weeklyCount}
-                monthlyStats={{ most_trained: stats.mostTrained }}
-                weightTrend={stats.weightTrend}
-              />
+              <div className="flex-none px-1">
+                <StatsCard
+                  streak={stats.streak}
+                  weeklyGoal={weeklyGoal}
+                  weeklyProgress={stats.weeklyCount}
+                  monthlyStats={{ most_trained: stats.mostTrained }}
+                  weightTrend={stats.weightTrend}
+                />
+              </div>
 
-              <SmartTip recommendation={stats.recommendation} />
+              <div className="flex-none px-1">
+                <SmartTip recommendation={stats.recommendation} />
+              </div>
 
-              <HydrationCard />
+              <div className="flex-1 min-h-0 px-1 overflow-hidden">
+                <HydrationCard />
+              </div>
             </motion.div>
           )}
 
