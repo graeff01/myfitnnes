@@ -304,7 +304,7 @@ function App() {
               transition={{ duration: 0.2 }}
               className="flex-1 flex flex-col overflow-hidden p-4"
             >
-              <div className="flex-1 overflow-hidden mt-2">
+              <div className="flex-1 flex flex-col overflow-hidden mt-2">
                 <WorkoutSection
                   workouts={workouts}
                   weeklyStats={weeklyStats}
@@ -337,7 +337,7 @@ function App() {
               transition={{ duration: 0.2 }}
               className="flex-1 flex flex-col overflow-hidden p-4"
             >
-              <div className="flex-1 overflow-hidden mt-2">
+              <div className="flex-1 flex flex-col overflow-hidden mt-2">
                 <ProgressView />
               </div>
             </motion.div>
