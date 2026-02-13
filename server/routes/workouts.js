@@ -256,6 +256,7 @@ router.delete('/:id', async (req, res) => {
 router.get('/settings', async (req, res) => {
     try {
         const userId = req.user.id;
+        // console.log(`[DEBUG] Fetching settings for user ${userId}`);
         const settings = await getAsync('SELECT * FROM settings WHERE user_id = ?', [userId]);
         res.json(settings || { weekly_goal: 4 });
     } catch (error) {

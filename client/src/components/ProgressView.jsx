@@ -34,8 +34,6 @@ const ProgressView = () => {
                 api.getPhotos(),
                 api.getSettings()
             ]);
-            setWeightLogs(weightData);
-            setMeasurements(measurementsData);
             setPhotos(photosData);
             if (settingsData && settingsData.weight_goal) {
                 setWeightGoal(settingsData.weight_goal);
@@ -199,7 +197,38 @@ const ProgressView = () => {
                     className="card"
                 >
                     <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-semibold">Evolução de Peso</h3>
+                        <div className="flex items-center gap-2">
+                            <h3 className="text-lg font-semibold">Evolução de Peso</h3>
+                            <button
+                                onClick={async () => {
+                                    const current = weightGoal || '';
+                                    const newGoal = prompt('Definir meta de peso (kg):', current);
+                                    if (newGoal !== null) {
+                                        const val = parseFloat(newGoal);
+                                        if (!isNaN(val) && val > 0) {
+                                            try {
+                                                await api.updateSettings({ weight_goal: val });
+                                                setWeightGoal(val);
+                                            } catch (err) {
+                                                console.error('Error setting goal:', err);
+                                                alert('Erro ao salvar meta');
+                                            }
+                                        } else if (newGoal === '') {
+                                            // Allow clearing goal?
+                                            try {
+                                                await api.updateSettings({ weight_goal: null });
+                                                setWeightGoal(null);
+                                            } catch (err) {
+                                                console.error('Error clearing goal:', err);
+                                            }
+                                        }
+                                    }
+                                }}
+                                className="text-xs bg-surface-light hover:bg-white/10 text-secondary px-2 py-1 rounded border border-secondary/30 transition-colors"
+                            >
+                                {weightGoal ? '🎯 Editar Meta' : '🎯 Definir Meta'}
+                            </button>
+                        </div>
                         {weightChange && (
                             <div className={`text-sm font-semibold ${weightChange.isGain ? 'text-secondary' : 'text-primary'}`}>
                                 {weightChange.isGain ? '↗' : '↘'} {weightChange.value} kg ({weightChange.percentage}%)
