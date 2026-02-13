@@ -173,11 +173,11 @@ export const getSettings = async () => {
     return handleResponse(response);
 };
 
-export const updateSettings = async (weeklyGoal) => {
+export const updateSettings = async (settings) => {
     const response = await fetch(`${API_BASE}/workouts/settings`, {
         method: 'PUT',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ weekly_goal: weeklyGoal })
+        body: JSON.stringify(settings)
     });
     return handleResponse(response);
 };

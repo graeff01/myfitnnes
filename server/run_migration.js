@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 const dbPath = path.join(__dirname, 'db/myfit.db');
-const migrationPath = path.join(__dirname, 'config/migration_cumulative_history.sql');
+const migrationPath = process.argv[2] ? path.resolve(process.argv[2]) : path.join(__dirname, 'config/migration_cumulative_history.sql');
 
 const db = new sqlite3.Database(dbPath, (err) => {
     if (err) {

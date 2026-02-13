@@ -14,12 +14,8 @@ const ProgressView = () => {
     const [showMeasurementsModal, setShowMeasurementsModal] = useState(false);
     const [showPhotoModal, setShowPhotoModal] = useState(false);
     const [showComparisonModal, setShowComparisonModal] = useState(false); // New
-    const [selectedPhoto, setSelectedPhoto] = useState(null);
-    const [activeChart, setActiveChart] = useState('weight'); // 'weight', 'measurements', or 'photos'
-    const [uploading, setUploading] = useState(false);
-    const [visiblePhotosCount, setVisiblePhotosCount] = useState(6);
-    const [isSelectionMode, setIsSelectionMode] = useState(false); // New
     const [selectedForComparison, setSelectedForComparison] = useState([]); // New
+    const [weightGoal, setWeightGoal] = useState(null); // New
 
     useEffect(() => {
         loadData();
@@ -27,14 +23,18 @@ const ProgressView = () => {
 
     const loadData = async () => {
         try {
-            const [weightData, measurementsData, photosData] = await Promise.all([
+            const [weightData, measurementsData, photosData, settingsData] = await Promise.all([
                 api.getWeightLogs(null, null, 12),
                 api.getMeasurements(null, null, 12),
-                api.getPhotos()
+                api.getPhotos(),
+                api.getSettings()
             ]);
             setWeightLogs(weightData);
             setMeasurements(measurementsData);
             setPhotos(photosData);
+            if (settingsData && settingsData.weight_goal) {
+                setWeightGoal(settingsData.weight_goal);
+            }
         } catch (error) {
             console.error('Error loading progress data:', error);
         }
@@ -190,28 +190,54 @@ const ProgressView = () => {
                     ) : (
                         <div className="space-y-4">
                             {/* Simple line chart visualization */}
-                            <div className="relative h-40 flex items-end gap-1">
-                                {weightLogs.slice().reverse().map((log, index) => {
-                                    const maxWeight = Math.max(...weightLogs.map(l => l.weight));
-                                    const minWeight = Math.min(...weightLogs.map(l => l.weight));
-                                    const range = maxWeight - minWeight || 1;
-                                    const height = ((log.weight - minWeight) / range) * 100;
+                            <div className="relative h-40 flex items-end gap-1 mt-6">
+                                {(() => {
+                                    // Calculate scale including the goal
+                                    const weights = weightLogs.map(l => l.weight);
+                                    if (weightGoal) weights.push(weightGoal);
+                                    const maxWeight = Math.max(...weights);
+                                    const minWeight = Math.min(...weights);
+                                    // Add some padding to headers/footers
+                                    const range = (maxWeight - minWeight) || 1;
+
+                                    // Calculate goal position
+                                    const goalHeight = weightGoal ? ((weightGoal - minWeight) / range) * 100 : null;
 
                                     return (
-                                        <motion.div
-                                            key={log.id}
-                                            initial={{ height: 0 }}
-                                            animate={{ height: `${Math.max(height, 10)}%` }}
-                                            transition={{ delay: index * 0.05 }}
-                                            className="flex-1 bg-primary rounded-t-lg relative group"
-                                            title={`${log.weight} kg - ${formatDate(log.date)}`}
-                                        >
-                                            <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-surface px-2 py-1 rounded text-xs whitespace-nowrap">
-                                                {log.weight} kg
-                                            </div>
-                                        </motion.div>
+                                        <>
+                                            {/* Goal Line */}
+                                            {weightGoal && (
+                                                <div
+                                                    className="absolute w-full border-t-2 border-dashed border-secondary/50 z-10 pointer-events-none flex items-center"
+                                                    style={{ bottom: `${Math.min(Math.max(goalHeight, 0), 100)}%` }}
+                                                >
+                                                    <span className="absolute right-0 bottom-1 bg-surface-light text-[10px] text-secondary px-1 rounded font-bold">
+                                                        Meta: {weightGoal}kg
+                                                    </span>
+                                                </div>
+                                            )}
+
+                                            {/* Bars */}
+                                            {weightLogs.slice().reverse().map((log, index) => {
+                                                const height = ((log.weight - minWeight) / range) * 100;
+                                                return (
+                                                    <motion.div
+                                                        key={log.id}
+                                                        initial={{ height: 0 }}
+                                                        animate={{ height: `${Math.max(height, 5)}%` }}
+                                                        transition={{ delay: index * 0.05 }}
+                                                        className={`flex-1 rounded-t-lg relative group ${log.weight <= weightGoal ? 'bg-secondary' : 'bg-primary'}`}
+                                                        title={`${log.weight} kg - ${formatDate(log.date)}`}
+                                                    >
+                                                        <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-surface px-2 py-1 rounded text-xs whitespace-nowrap z-20 shadow-lg">
+                                                            {log.weight} kg
+                                                        </div>
+                                                    </motion.div>
+                                                );
+                                            })}
+                                        </>
                                     );
-                                })}
+                                })()}
                             </div>
 
                             {/* Weight history list */}

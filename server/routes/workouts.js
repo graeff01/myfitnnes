@@ -267,26 +267,37 @@ router.get('/settings', async (req, res) => {
 // Update user settings
 router.put('/settings', async (req, res) => {
     try {
-        const { weekly_goal } = req.body;
+        const { weekly_goal, weight_goal } = req.body;
         const userId = req.user.id;
-
-        if (!weekly_goal || weekly_goal < 1 || weekly_goal > 7) {
-            return res.status(400).json({ error: 'Weekly goal must be between 1 and 7' });
-        }
 
         const existing = await getAsync('SELECT id FROM settings WHERE user_id = ?', [userId]);
 
         if (existing) {
-            await runAsync(`
-                UPDATE settings 
-                SET weekly_goal = ?, updated_at = CURRENT_TIMESTAMP
-                WHERE user_id = ?
-            `, [weekly_goal, userId]);
+            let query = 'UPDATE settings SET ';
+            const params = [];
+            const updates = [];
+
+            if (weekly_goal) {
+                updates.push('weekly_goal = ?');
+                params.push(weekly_goal);
+            }
+            if (weight_goal) {
+                updates.push('weight_goal = ?');
+                params.push(weight_goal);
+            }
+
+            if (updates.length === 0) return res.status(400).json({ error: 'No settings to update' });
+
+            query += updates.join(', ') + ', updated_at = CURRENT_TIMESTAMP WHERE user_id = ?';
+            params.push(userId);
+
+            await runAsync(query, params);
         } else {
+            // Default 4 days if creating new and weekly_goal not provided
             await runAsync(`
-                INSERT INTO settings (user_id, weekly_goal)
-                VALUES (?, ?)
-            `, [userId, weekly_goal]);
+                INSERT INTO settings (user_id, weekly_goal, weight_goal)
+                VALUES (?, ?, ?)
+            `, [userId, weekly_goal || 4, weight_goal || null]);
         }
 
         const updated = await getAsync('SELECT * FROM settings WHERE user_id = ?', [userId]);
