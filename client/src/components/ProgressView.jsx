@@ -19,6 +19,7 @@ const ProgressView = () => {
     const [activeChart, setActiveChart] = useState('weight'); // 'weight', 'measurements', or 'photos'
     const [uploading, setUploading] = useState(false);
     const [visiblePhotosCount, setVisiblePhotosCount] = useState(6);
+    const [selectedPhoto, setSelectedPhoto] = useState(null); // Restored
     const [isSelectionMode, setIsSelectionMode] = useState(false); // New
 
     useEffect(() => {
