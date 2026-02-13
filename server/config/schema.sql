@@ -66,6 +66,7 @@ CREATE TABLE IF NOT EXISTS settings (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL UNIQUE,
   weekly_goal INTEGER DEFAULT 4,
+  weight_goal REAL,
   weight_unit TEXT DEFAULT 'kg',
   measurement_unit TEXT DEFAULT 'cm',
   created_at TEXT DEFAULT CURRENT_TIMESTAMP,

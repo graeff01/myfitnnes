@@ -87,8 +87,10 @@ async function runMigrations() {
     try {
         const columns = await allAsync('PRAGMA table_info(settings)');
         const hasUserId = columns.some(col => col.name === 'user_id');
+        const hasWeightGoal = columns.some(col => col.name === 'weight_goal');
+
         if (columns.length > 0 && !hasUserId) {
-            console.log('Migrating settings table...');
+            console.log('Migrating settings table (adding user_id)...');
             await runAsync('ALTER TABLE settings RENAME TO settings_old');
             await runAsync(`CREATE TABLE settings (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -98,11 +100,20 @@ async function runMigrations() {
                 measurement_unit TEXT DEFAULT 'cm',
                 created_at TEXT DEFAULT CURRENT_TIMESTAMP,
                 updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                weight_goal REAL,
                 FOREIGN KEY (user_id) REFERENCES users(id)
             )`);
             await runAsync('INSERT INTO settings (user_id, weekly_goal) SELECT 1, weekly_goal FROM settings_old WHERE id = 1');
             await runAsync('DROP TABLE settings_old');
-            console.log('✅ Settings table migrated.');
+            console.log('✅ Settings table migrated (user_id added).');
+        } else if (columns.length > 0 && !hasWeightGoal) {
+            console.log('Migrating settings table (adding weight_goal)...');
+            try {
+                await runAsync('ALTER TABLE settings ADD COLUMN weight_goal REAL');
+                console.log('✅ Settings table migrated (weight_goal added).');
+            } catch (err) {
+                console.error('Error adding weight_goal column:', err.message);
+            }
         } else if (columns.length === 0) {
             // Table doesn't exist yet, schema.sql will handle it
             console.log('Settings table will be handled by schema.sql');
