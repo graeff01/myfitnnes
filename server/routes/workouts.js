@@ -157,6 +157,62 @@ router.get('/stats/streak', async (req, res) => {
     }
 });
 
+// Get user settings
+router.get('/settings', async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const settings = await getAsync('SELECT * FROM settings WHERE user_id = ?', [userId]);
+        res.json(settings || { weekly_goal: 4 });
+    } catch (error) {
+        console.error('Error fetching settings:', error);
+        res.status(500).json({ error: 'Failed to fetch settings', details: error.message });
+    }
+});
+
+// Update user settings
+router.put('/settings', async (req, res) => {
+    try {
+        const { weekly_goal, weight_goal } = req.body;
+        const userId = req.user.id;
+
+        const existing = await getAsync('SELECT id FROM settings WHERE user_id = ?', [userId]);
+
+        if (existing) {
+            let query = 'UPDATE settings SET ';
+            const params = [];
+            const updates = [];
+
+            if (weekly_goal) {
+                updates.push('weekly_goal = ?');
+                params.push(weekly_goal);
+            }
+            if (weight_goal) {
+                updates.push('weight_goal = ?');
+                params.push(weight_goal);
+            }
+
+            if (updates.length === 0) return res.status(400).json({ error: 'No settings to update' });
+
+            query += updates.join(', ') + ', updated_at = CURRENT_TIMESTAMP WHERE user_id = ?';
+            params.push(userId);
+
+            await runAsync(query, params);
+        } else {
+            // Default 4 days if creating new and weekly_goal not provided
+            await runAsync(`
+                INSERT INTO settings (user_id, weekly_goal, weight_goal)
+                VALUES (?, ?, ?)
+            `, [userId, weekly_goal || 4, weight_goal || null]);
+        }
+
+        const updated = await getAsync('SELECT * FROM settings WHERE user_id = ?', [userId]);
+        res.json(updated);
+    } catch (error) {
+        console.error('Error updating settings:', error);
+        res.status(500).json({ error: 'Failed to update settings', details: error.message });
+    }
+});
+
 // Log a new workout
 router.post('/', async (req, res) => {
     try {
@@ -252,61 +308,6 @@ router.delete('/:id', async (req, res) => {
     }
 });
 
-// Get user settings
-router.get('/settings', async (req, res) => {
-    try {
-        const userId = req.user.id;
-        // console.log(`[DEBUG] Fetching settings for user ${userId}`);
-        const settings = await getAsync('SELECT * FROM settings WHERE user_id = ?', [userId]);
-        res.json(settings || { weekly_goal: 4 });
-    } catch (error) {
-        console.error('Error fetching settings:', error);
-        res.status(500).json({ error: 'Failed to fetch settings', details: error.message });
-    }
-});
 
-// Update user settings
-router.put('/settings', async (req, res) => {
-    try {
-        const { weekly_goal, weight_goal } = req.body;
-        const userId = req.user.id;
-
-        const existing = await getAsync('SELECT id FROM settings WHERE user_id = ?', [userId]);
-
-        if (existing) {
-            let query = 'UPDATE settings SET ';
-            const params = [];
-            const updates = [];
-
-            if (weekly_goal) {
-                updates.push('weekly_goal = ?');
-                params.push(weekly_goal);
-            }
-            if (weight_goal) {
-                updates.push('weight_goal = ?');
-                params.push(weight_goal);
-            }
-
-            if (updates.length === 0) return res.status(400).json({ error: 'No settings to update' });
-
-            query += updates.join(', ') + ', updated_at = CURRENT_TIMESTAMP WHERE user_id = ?';
-            params.push(userId);
-
-            await runAsync(query, params);
-        } else {
-            // Default 4 days if creating new and weekly_goal not provided
-            await runAsync(`
-                INSERT INTO settings (user_id, weekly_goal, weight_goal)
-                VALUES (?, ?, ?)
-            `, [userId, weekly_goal || 4, weight_goal || null]);
-        }
-
-        const updated = await getAsync('SELECT * FROM settings WHERE user_id = ?', [userId]);
-        res.json(updated);
-    } catch (error) {
-        console.error('Error updating settings:', error);
-        res.status(500).json({ error: 'Failed to update settings', details: error.message });
-    }
-});
 
 module.exports = router;
