@@ -34,6 +34,8 @@ const ProgressView = () => {
                 api.getPhotos(),
                 api.getSettings()
             ]);
+            setWeightLogs(weightData);
+            setMeasurements(measurementsData);
             setPhotos(photosData);
             if (settingsData && settingsData.weight_goal) {
                 setWeightGoal(settingsData.weight_goal);
