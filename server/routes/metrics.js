@@ -55,11 +55,28 @@ router.post('/weight', async (req, res) => {
             return res.status(400).json({ error: 'Invalid weight value' });
         }
 
-        // Always insert new record (remove existing check to allow history)
-        const result = await runAsync(
-            'INSERT INTO weight_logs (user_id, date, weight, notes) VALUES (?, ?, ?, ?)',
-            [userId, date, weight, notes || null]
+        // Check if log exists for this date
+        const existing = await getAsync(
+            'SELECT id FROM weight_logs WHERE user_id = ? AND date = ?',
+            [userId, date]
         );
+
+        let result;
+        if (existing) {
+            // Update existing
+            await runAsync(
+                'UPDATE weight_logs SET weight = ?, notes = ? WHERE id = ?',
+                [weight, notes || null, existing.id]
+            );
+            result = { lastID: existing.id };
+        } else {
+            // Insert new
+            result = await runAsync(
+                'INSERT INTO weight_logs (user_id, date, weight, notes) VALUES (?, ?, ?, ?)',
+                [userId, date, weight, notes || null]
+            );
+        }
+
         const log = await getAsync('SELECT * FROM weight_logs WHERE id = ? AND user_id = ?', [result.lastID, userId]);
         res.status(201).json(log);
     } catch (error) {
