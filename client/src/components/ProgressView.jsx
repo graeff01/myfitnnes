@@ -15,6 +15,7 @@ const ProgressView = () => {
     const [selectedPhoto, setSelectedPhoto] = useState(null);
     const [activeChart, setActiveChart] = useState('weight'); // 'weight', 'measurements', or 'photos'
     const [uploading, setUploading] = useState(false);
+    const [visiblePhotosCount, setVisiblePhotosCount] = useState(6);
 
     useEffect(() => {
         loadData();
@@ -356,37 +357,50 @@ const ProgressView = () => {
                                 <p className="text-sm mt-1">Registre sua evolução visual!</p>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-2 gap-3 pb-4">
-                                {photos.map((photo, index) => (
-                                    <motion.div
-                                        key={photo.id}
-                                        initial={{ opacity: 0, scale: 0.9 }}
-                                        animate={{ opacity: 1, scale: 1 }}
-                                        transition={{ delay: index * 0.05 }}
-                                        className="relative group rounded-2xl overflow-hidden aspect-[3/4] bg-surface-light border border-white/5 cursor-pointer"
-                                        onClick={() => {
-                                            setSelectedPhoto(photo);
-                                            setShowPhotoModal(true);
-                                        }}
-                                    >
-                                        <img
-                                            src={photo.image_data}
-                                            alt={photo.caption || 'Foto de evolução'}
-                                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                                        />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-3 opacity-90 transition-opacity group-hover:opacity-100">
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex-1 min-w-0 pr-2">
-                                                    <p className="text-[10px] text-text-secondary font-bold uppercase tracking-wider">{formatDate(photo.date)}</p>
-                                                    {photo.caption && (
-                                                        <p className="text-xs text-white font-medium line-clamp-1">{photo.caption}</p>
-                                                    )}
+                            <>
+                                <div className="grid grid-cols-2 gap-3 pb-4">
+                                    {photos.slice(0, visiblePhotosCount).map((photo, index) => (
+                                        <motion.div
+                                            key={photo.id}
+                                            initial={{ opacity: 0, scale: 0.9 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            transition={{ delay: index * 0.05 }}
+                                            className="relative group rounded-2xl overflow-hidden aspect-[3/4] bg-surface-light border border-white/5 cursor-pointer"
+                                            onClick={() => {
+                                                setSelectedPhoto(photo);
+                                                setShowPhotoModal(true);
+                                            }}
+                                        >
+                                            <img
+                                                src={photo.image_data}
+                                                alt={photo.caption || 'Foto de evolução'}
+                                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                            />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-3 opacity-90 transition-opacity group-hover:opacity-100">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex-1 min-w-0 pr-2">
+                                                        <p className="text-[10px] text-text-secondary font-bold uppercase tracking-wider">{formatDate(photo.date)}</p>
+                                                        {photo.caption && (
+                                                            <p className="text-xs text-white font-medium line-clamp-1">{photo.caption}</p>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    </motion.div>
-                                ))}
-                            </div>
+                                        </motion.div>
+                                    ))}
+                                </div>
+
+                                {visiblePhotosCount < photos.length && (
+                                    <div className="flex justify-center mt-4">
+                                        <button
+                                            onClick={() => setVisiblePhotosCount(prev => prev + 6)}
+                                            className="py-2 px-6 bg-surface-light border border-white/10 rounded-xl text-sm font-medium hover:bg-white/5 transition-all active:scale-95"
+                                        >
+                                            Carregar mais fotos ({photos.length - visiblePhotosCount} restantes)
+                                        </button>
+                                    </div>
+                                )}
+                            </>
                         )}
                     </div>
                 </motion.div>
