@@ -4,6 +4,7 @@ import * as api from '../services/api';
 import WeightModal from './WeightModal';
 import MeasurementsModal from './MeasurementsModal';
 import PhotoDetailModal from './PhotoDetailModal';
+import ComparisonModal from './ComparisonModal';
 
 const ProgressView = () => {
     const [weightLogs, setWeightLogs] = useState([]);
@@ -12,10 +13,13 @@ const ProgressView = () => {
     const [showWeightModal, setShowWeightModal] = useState(false);
     const [showMeasurementsModal, setShowMeasurementsModal] = useState(false);
     const [showPhotoModal, setShowPhotoModal] = useState(false);
+    const [showComparisonModal, setShowComparisonModal] = useState(false); // New
     const [selectedPhoto, setSelectedPhoto] = useState(null);
     const [activeChart, setActiveChart] = useState('weight'); // 'weight', 'measurements', or 'photos'
     const [uploading, setUploading] = useState(false);
     const [visiblePhotosCount, setVisiblePhotosCount] = useState(6);
+    const [isSelectionMode, setIsSelectionMode] = useState(false); // New
+    const [selectedForComparison, setSelectedForComparison] = useState([]); // New
 
     useEffect(() => {
         loadData();
@@ -338,16 +342,50 @@ const ProgressView = () => {
                     <div className="card">
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-lg font-semibold">Galeria de Evolução</h3>
-                            <label className="bg-primary hover:bg-opacity-90 text-white text-xs font-bold py-2 px-4 rounded-xl cursor-pointer transition-all active:scale-95 flex items-center gap-2">
-                                <span>{uploading ? 'Carregando...' : '📷 Nova Foto'}</span>
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    className="hidden"
-                                    onChange={handlePhotoUpload}
-                                    disabled={uploading}
-                                />
-                            </label>
+                            <div className="flex gap-2">
+                                {isSelectionMode ? (
+                                    <>
+                                        <button
+                                            onClick={() => {
+                                                setIsSelectionMode(false);
+                                                setSelectedForComparison([]);
+                                            }}
+                                            className="text-text-secondary text-sm font-medium hover:text-white px-2 transition-colors"
+                                        >
+                                            Cancelar
+                                        </button>
+                                        <button
+                                            onClick={() => setShowComparisonModal(true)}
+                                            disabled={selectedForComparison.length !== 2}
+                                            className={`bg-secondary text-black text-xs font-bold py-2 px-4 rounded-xl transition-all ${selectedForComparison.length !== 2 ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105 active:scale-95'
+                                                }`}
+                                        >
+                                            Visualizar ({selectedForComparison.length}/2)
+                                        </button>
+                                    </>
+                                ) : (
+                                    <>
+                                        {photos.length >= 2 && (
+                                            <button
+                                                onClick={() => setIsSelectionMode(true)}
+                                                className="bg-surface-light border border-white/10 text-text-primary text-xs font-bold py-2 px-3 rounded-xl hover:bg-white/5 transition-all"
+                                            >
+                                                ⚖️ Comparar
+                                            </button>
+                                        )}
+                                        <label className="bg-primary hover:bg-opacity-90 text-white text-xs font-bold py-2 px-4 rounded-xl cursor-pointer transition-all active:scale-95 flex items-center gap-2">
+                                            <span>{uploading ? '...' : '📷 Nova'}</span>
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                className="hidden"
+                                                onChange={handlePhotoUpload}
+                                                disabled={uploading}
+                                            />
+                                        </label>
+                                    </>
+                                )}
+                            </div>
                         </div>
 
                         {photos.length === 0 ? (
@@ -359,35 +397,61 @@ const ProgressView = () => {
                         ) : (
                             <>
                                 <div className="grid grid-cols-2 gap-3 pb-4">
-                                    {photos.slice(0, visiblePhotosCount).map((photo, index) => (
-                                        <motion.div
-                                            key={photo.id}
-                                            initial={{ opacity: 0, scale: 0.9 }}
-                                            animate={{ opacity: 1, scale: 1 }}
-                                            transition={{ delay: index * 0.05 }}
-                                            className="relative group rounded-2xl overflow-hidden aspect-[3/4] bg-surface-light border border-white/5 cursor-pointer"
-                                            onClick={() => {
-                                                setSelectedPhoto(photo);
-                                                setShowPhotoModal(true);
-                                            }}
-                                        >
-                                            <img
-                                                src={photo.image_data}
-                                                alt={photo.caption || 'Foto de evolução'}
-                                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                                            />
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-3 opacity-90 transition-opacity group-hover:opacity-100">
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex-1 min-w-0 pr-2">
-                                                        <p className="text-[10px] text-text-secondary font-bold uppercase tracking-wider">{formatDate(photo.date)}</p>
-                                                        {photo.caption && (
-                                                            <p className="text-xs text-white font-medium line-clamp-1">{photo.caption}</p>
-                                                        )}
+                                    {photos.slice(0, visiblePhotosCount).map((photo, index) => {
+                                        const isSelected = selectedForComparison.some(p => p.id === photo.id);
+                                        return (
+                                            <motion.div
+                                                key={photo.id}
+                                                initial={{ opacity: 0, scale: 0.9 }}
+                                                animate={{ opacity: 1, scale: 1 }}
+                                                transition={{ delay: index * 0.05 }}
+                                                className={`relative group rounded-2xl overflow-hidden aspect-[3/4] bg-surface-light border cursor-pointer
+                                                    ${isSelected ? 'border-secondary ring-2 ring-secondary ring-offset-2 ring-offset-surface' : 'border-white/5'}
+                                                `}
+                                                onClick={() => {
+                                                    if (isSelectionMode) {
+                                                        if (isSelected) {
+                                                            setSelectedForComparison(prev => prev.filter(p => p.id !== photo.id));
+                                                        } else {
+                                                            if (selectedForComparison.length < 2) {
+                                                                setSelectedForComparison(prev => [...prev, photo]);
+                                                            } else {
+                                                                // Replace the first one (FIFO) or just block? Let's block for clarity or swap? Block is safer.
+                                                                // Actually better UX: if full, remove first and add new? No, explicit is better.
+                                                                toast('Selecione apenas 2 fotos', { icon: '⚠️' });
+                                                            }
+                                                        }
+                                                    } else {
+                                                        setSelectedPhoto(photo);
+                                                        setShowPhotoModal(true);
+                                                    }
+                                                }}
+                                            >
+                                                <img
+                                                    src={photo.image_data}
+                                                    alt={photo.caption || 'Foto de evolução'}
+                                                    className={`w-full h-full object-cover transition-transform duration-500 ${!isSelectionMode && 'group-hover:scale-110'}`}
+                                                />
+                                                {isSelectionMode && (
+                                                    <div className={`absolute top-2 right-2 w-6 h-6 rounded-full border-2 flex items-center justify-center
+                                                        ${isSelected ? 'bg-secondary border-secondary' : 'bg-black/40 border-white'}
+                                                    `}>
+                                                        {isSelected && <span className="text-black text-xs font-bold">✓</span>}
+                                                    </div>
+                                                )}
+                                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-3 opacity-90 transition-opacity group-hover:opacity-100">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex-1 min-w-0 pr-2">
+                                                            <p className="text-[10px] text-text-secondary font-bold uppercase tracking-wider">{formatDate(photo.date)}</p>
+                                                            {photo.caption && (
+                                                                <p className="text-xs text-white font-medium line-clamp-1">{photo.caption}</p>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        </motion.div>
-                                    ))}
+                                            </motion.div>
+                                        );
+                                    })}
                                 </div>
 
                                 {visiblePhotosCount < photos.length && (
@@ -422,6 +486,12 @@ const ProgressView = () => {
                 photo={selectedPhoto}
                 onClose={() => setShowPhotoModal(false)}
                 onDelete={handleDeletePhoto}
+            />
+            <ComparisonModal
+                isOpen={showComparisonModal}
+                photo1={selectedForComparison[0]}
+                photo2={selectedForComparison[1]}
+                onClose={() => setShowComparisonModal(false)}
             />
         </div>
     );
