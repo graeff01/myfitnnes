@@ -113,7 +113,10 @@ const ProgressView = () => {
 
         if (weights.length > 0) {
             maxWeight = Math.max(...weights);
+            // Set minWeight lower than actual min to ensure bars have visible height
             minWeight = Math.min(...weights);
+            // Subtract a bit of margin
+            minWeight = Math.max(0, minWeight - 2);
         }
 
         const range = (maxWeight - minWeight) || 1;
@@ -123,6 +126,17 @@ const ProgressView = () => {
     };
 
     const chartData = getChartData();
+
+    // Delete weight log
+    const handleDeleteWeight = async (id) => {
+        if (!window.confirm('Excluir este registro de peso?')) return;
+        try {
+            await api.deleteWeightLog(id);
+            loadData();
+        } catch (error) {
+            console.error('Error deleting weight:', error);
+        }
+    };
 
     // Format date for display
     const formatDate = (dateStr) => {
@@ -232,7 +246,7 @@ const ProgressView = () => {
                             </button>
                         </div>
                         {weightChange && (
-                            <div className={`text-sm font-semibold ${weightChange.isGain ? 'text-secondary' : 'text-primary'}`}>
+                            <div className={`text-sm font-semibold ${weightChange.isGain ? 'text-primary' : 'text-secondary'}`}>
                                 {weightChange.isGain ? '↗' : '↘'} {weightChange.value} kg ({weightChange.percentage}%)
                             </div>
                         )}
@@ -247,9 +261,9 @@ const ProgressView = () => {
                     ) : (
                         <div className="space-y-4">
                             {/* Simple line chart visualization */}
-                            <div className="relative h-40 flex items-end gap-1 mt-6">
+                            <div className="relative h-40 flex items-end gap-1 mt-6 px-2">
                                 {/* Goal Line */}
-                                {weightGoal && chartData.goalHeight !== null && (
+                                {weightGoal && (
                                     <div
                                         className="absolute w-full border-t-2 border-dashed border-secondary/50 z-10 pointer-events-none flex items-center"
                                         style={{ bottom: `${Math.min(Math.max(chartData.goalHeight, 0), 100)}%` }}
@@ -282,30 +296,44 @@ const ProgressView = () => {
 
                             {/* Weight history list */}
                             <div className="space-y-2 max-h-60 overflow-y-auto scrollbar-hide">
-                                {weightLogs.map((log, index) => (
-                                    <motion.div
-                                        key={log.id}
-                                        initial={{ opacity: 0, x: -20 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        transition={{ delay: index * 0.05 }}
-                                        className="flex items-center justify-between p-3 bg-surface-light rounded-xl"
-                                    >
-                                        <div>
-                                            <div className="font-semibold text-lg">{log.weight} kg</div>
-                                            <div className="text-xs text-text-secondary">{formatDate(log.date)}</div>
-                                            {log.notes && (
-                                                <div className="text-xs text-text-secondary italic mt-1">"{log.notes}"</div>
-                                            )}
-                                        </div>
-                                        {index > 0 && (
-                                            <div className={`text-sm font-medium ${log.weight > weightLogs[index - 1].weight ? 'text-secondary' : 'text-primary'
-                                                }`}>
-                                                {log.weight > weightLogs[index - 1].weight ? '↗' : '↘'}
-                                                {Math.abs(log.weight - weightLogs[index - 1].weight).toFixed(1)} kg
+                                {weightLogs.map((log, index) => {
+                                    const diff = index < weightLogs.length - 1 ? log.weight - weightLogs[index + 1].weight : null;
+
+                                    return (
+                                        <motion.div
+                                            key={log.id}
+                                            initial={{ opacity: 0, x: -20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            transition={{ delay: index * 0.05 }}
+                                            className="flex items-center justify-between p-3 bg-surface-light rounded-xl group"
+                                        >
+                                            <div className="flex-1">
+                                                <div className="flex items-baseline gap-2">
+                                                    <div className="font-semibold text-lg">{log.weight} kg</div>
+                                                    {diff !== null && diff !== 0 && (
+                                                        <div className={`text-xs font-bold ${diff > 0 ? 'text-primary' : 'text-secondary'}`}>
+                                                            {diff > 0 ? '↗' : '↘'} {Math.abs(diff).toFixed(1)} kg
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="text-xs text-text-secondary">{formatDate(log.date)}</div>
+                                                {log.notes && (
+                                                    <div className="text-xs text-text-secondary italic mt-1">"{log.notes}"</div>
+                                                )}
                                             </div>
-                                        )}
-                                    </motion.div>
-                                ))}
+
+                                            <button
+                                                onClick={() => handleDeleteWeight(log.id)}
+                                                className="opacity-0 group-hover:opacity-100 p-2 text-text-secondary hover:text-primary transition-all"
+                                                title="Excluir"
+                                            >
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                </svg>
+                                            </button>
+                                        </motion.div>
+                                    );
+                                })}
                             </div>
                         </div>
                     )}
