@@ -8,9 +8,8 @@ import SmartTip from './SmartTip';
 export default function WorkoutSection({
     workouts,
     weeklyStats,
-    onEditWorkout,
     onDeleteWorkout,
-    recommendation // Added
+    recommendation
 }) {
     const [viewMode, setViewMode] = useState('week'); // week, month, list
     const [viewDate, setViewDate] = useState(null);
@@ -75,7 +74,6 @@ export default function WorkoutSection({
                         >
                             <WorkoutHistory
                                 workouts={workouts}
-                                onEdit={onEditWorkout}
                                 onDelete={onDeleteWorkout}
                             />
                         </motion.div>
@@ -122,10 +120,7 @@ export default function WorkoutSection({
                                                 <p className="text-xs text-text-secondary italic">"{w.notes}"</p>
                                             )}
                                         </div>
-                                        <div className="flex gap-2">
-                                            <button onClick={() => onEditWorkout(w)} className="p-2 hover:bg-white/10 rounded-full transition-colors">✏️</button>
-                                            <button onClick={() => onDeleteWorkout(w.id)} className="p-2 hover:bg-white/10 rounded-full transition-colors text-red-400">🗑️</button>
-                                        </div>
+                                        <button onClick={() => onDeleteWorkout(w.id)} className="p-2 hover:bg-white/10 rounded-full transition-colors text-red-400">🗑️</button>
                                     </div>
                                 );
                             })

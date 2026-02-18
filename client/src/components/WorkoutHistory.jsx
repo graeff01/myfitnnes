@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { muscleGroups } from './MuscleGroupSelector';
 
-const WorkoutHistory = ({ workouts = [], onDelete, onEdit }) => {
-    const [editingId, setEditingId] = useState(null);
+const WorkoutHistory = ({ workouts = [], onDelete }) => {
 
     // Group workouts by date
     const groupedWorkouts = workouts.reduce((acc, workout) => {
@@ -79,7 +78,6 @@ const WorkoutHistory = ({ workouts = [], onDelete, onEdit }) => {
                         <div className="space-y-2">
                             {dayWorkouts.map((workout) => {
                                 const muscleGroupsArray = workout.muscle_groups.split(',');
-                                const isToday = workout.date === new Date().toISOString().split('T')[0];
 
                                 return (
                                     <motion.div
@@ -100,46 +98,24 @@ const WorkoutHistory = ({ workouts = [], onDelete, onEdit }) => {
                                                 ))}
                                             </div>
 
-                                            <div className="flex gap-2">
-                                                {isToday && (
-                                                    <button
-                                                        onClick={() => onEdit(workout)}
-                                                        className="p-2 hover:bg-surface rounded-lg transition-colors"
-                                                    >
-                                                        <svg
-                                                            className="w-5 h-5 text-text-secondary hover:text-tertiary"
-                                                            fill="none"
-                                                            stroke="currentColor"
-                                                            viewBox="0 0 24 24"
-                                                        >
-                                                            <path
-                                                                strokeLinecap="round"
-                                                                strokeLinejoin="round"
-                                                                strokeWidth={2}
-                                                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                                                            />
-                                                        </svg>
-                                                    </button>
-                                                )}
-                                                <button
-                                                    onClick={() => onDelete(workout.id)}
-                                                    className="p-2 hover:bg-surface rounded-lg transition-colors"
+                                            <button
+                                                onClick={() => onDelete(workout.id)}
+                                                className="p-2 hover:bg-surface rounded-lg transition-colors"
+                                            >
+                                                <svg
+                                                    className="w-5 h-5 text-text-secondary hover:text-red-500"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    viewBox="0 0 24 24"
                                                 >
-                                                    <svg
-                                                        className="w-5 h-5 text-text-secondary hover:text-red-500"
-                                                        fill="none"
-                                                        stroke="currentColor"
-                                                        viewBox="0 0 24 24"
-                                                    >
-                                                        <path
-                                                            strokeLinecap="round"
-                                                            strokeLinejoin="round"
-                                                            strokeWidth={2}
-                                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                                                        />
-                                                    </svg>
-                                                </button>
-                                            </div>
+                                                    <path
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                        strokeWidth={2}
+                                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                                    />
+                                                </svg>
+                                            </button>
                                         </div>
 
                                         {workout.notes && (

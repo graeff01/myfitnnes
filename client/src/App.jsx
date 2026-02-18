@@ -8,7 +8,6 @@ import ActivityRings from './components/ActivityRings';
 import HydrationCard from './components/HydrationCard';
 import SupplementCard from './components/SupplementCard';
 import StatsCard from './components/StatsCard';
-import WorkoutModal from './components/WorkoutModal';
 import WorkoutPlanSection from './components/WorkoutPlanSection';
 import BottomNav from './components/BottomNav';
 import WorkoutSection from './components/WorkoutSection';
@@ -21,8 +20,6 @@ function App() {
   const [activeTab, setActiveTab] = useState('home');
   const [workoutsSubTab, setWorkoutsSubTab] = useState('plano'); // 'plano' | 'registro'
   const [workouts, setWorkouts] = useState([]);
-  const [showWorkoutModal, setShowWorkoutModal] = useState(false);
-  const [selectedWorkout, setSelectedWorkout] = useState(null);
   const [weeklyStats, setWeeklyStats] = useState([]);
   const [weightLogs, setWeightLogs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -201,24 +198,6 @@ function App() {
   }, [workouts, weightLogs]);
 
 
-  const handleSaveWorkout = async (data) => {
-    try {
-      if (selectedWorkout) {
-        await api.updateWorkout(selectedWorkout.id, data);
-        toast.success('Treino atualizado!');
-      } else {
-        await api.logWorkout(data);
-        toast.success('Treino registrado!');
-      }
-      setShowWorkoutModal(false);
-      setSelectedWorkout(null);
-      setRefreshKey(prev => prev + 1);
-    } catch (error) {
-      console.error('Error saving workout:', error);
-      toast.error('Erro ao salvar treino');
-    }
-  };
-
   const handleDeleteWorkout = async (id) => {
     if (!window.confirm('Tem certeza que deseja excluir este treino?')) return;
     try {
@@ -229,11 +208,6 @@ function App() {
       console.error('Error deleting workout:', error);
       toast.error('Erro ao excluir');
     }
-  };
-
-  const handleEditWorkout = (workout) => {
-    setSelectedWorkout(workout);
-    setShowWorkoutModal(true);
   };
 
   const handlePlanWorkoutLogged = () => {
@@ -355,7 +329,6 @@ function App() {
                     <WorkoutSection
                       workouts={workouts}
                       weeklyStats={weeklyStats}
-                      onEditWorkout={handleEditWorkout}
                       onDeleteWorkout={handleDeleteWorkout}
                       recommendation={stats.recommendation}
                     />
@@ -363,20 +336,6 @@ function App() {
                 )}
               </AnimatePresence>
 
-              {/* FAB - only shown in Registro tab */}
-              {workoutsSubTab === 'registro' && (
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => {
-                    setSelectedWorkout(null);
-                    setShowWorkoutModal(true);
-                  }}
-                  className="fixed bottom-24 right-6 w-14 h-14 bg-primary rounded-full shadow-lg shadow-primary/30 flex items-center justify-center text-2xl z-40 border border-white/20"
-                >
-                  ➕
-                </motion.button>
-              )}
             </motion.div>
           )}
 
@@ -417,16 +376,6 @@ function App() {
         </AnimatePresence>
 
         <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
-
-        <WorkoutModal
-          isOpen={showWorkoutModal}
-          onClose={() => {
-            setShowWorkoutModal(false);
-            setSelectedWorkout(null);
-          }}
-          onSave={handleSaveWorkout}
-          initialData={selectedWorkout}
-        />
       </div>
     </div>
   );
