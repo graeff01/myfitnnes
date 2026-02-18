@@ -310,3 +310,66 @@ export const deletePhoto = async (id) => {
     });
     return handleResponse(response);
 };
+
+// ============================================
+// WORKOUT PLANS API
+// ============================================
+
+export const getPlans = async () => {
+    const response = await fetch(`${API_BASE}/plans`, { headers: getAuthHeaders() });
+    return handleResponse(response);
+};
+
+export const addPlanExercise = async (planId, exercise) => {
+    const response = await fetch(`${API_BASE}/plans/${planId}/exercises`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(exercise)
+    });
+    return handleResponse(response);
+};
+
+export const deletePlanExercise = async (planId, exerciseId) => {
+    const response = await fetch(`${API_BASE}/plans/${planId}/exercises/${exerciseId}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+    });
+    return handleResponse(response);
+};
+
+// ============================================
+// SUPPLEMENTS API
+// ============================================
+
+export const getSupplementLog = async (date) => {
+    const response = await fetch(`${API_BASE}/supplements/${date}`, { headers: getAuthHeaders() });
+    return handleResponse(response);
+};
+
+export const logSupplement = async ({ date, taken_morning, taken_evening }) => {
+    const response = await fetch(`${API_BASE}/supplements`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ date, taken_morning, taken_evening })
+    });
+    return handleResponse(response);
+};
+
+// ============================================
+// GOAL PHOTO API (via settings)
+// ============================================
+
+export const saveGoalPhoto = async (goal_photo) => {
+    const response = await fetch(`${API_BASE}/workouts/settings`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ goal_photo })
+    });
+    return handleResponse(response);
+};
+
+export const getGoalPhoto = async () => {
+    const response = await fetch(`${API_BASE}/workouts/settings`, { headers: getAuthHeaders() });
+    const data = await handleResponse(response);
+    return data?.goal_photo || null;
+};

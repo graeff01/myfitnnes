@@ -1,11 +1,65 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { User, LogOut, Shield, Settings, Info, Dumbbell, Calendar, Trophy } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { User, LogOut, Shield, Settings, Info, Dumbbell, Calendar, Trophy, Target, Camera, X } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import * as api from '../services/api';
 
 const ProfileView = ({ stats, onLogout }) => {
     const userString = localStorage.getItem('myfit_user');
     const user = userString ? JSON.parse(userString) : { username: 'Atleta' };
+    const [goalPhoto, setGoalPhoto] = useState(null);
+    const [loadingPhoto, setLoadingPhoto] = useState(true);
+    const [showGoalPhoto, setShowGoalPhoto] = useState(false);
+    const fileInputRef = useRef(null);
+
+    useEffect(() => {
+        loadGoalPhoto();
+    }, []);
+
+    const loadGoalPhoto = async () => {
+        try {
+            const photo = await api.getGoalPhoto();
+            setGoalPhoto(photo);
+        } catch (err) {
+            console.error('Error loading goal photo:', err);
+        } finally {
+            setLoadingPhoto(false);
+        }
+    };
+
+    const handleGoalPhotoUpload = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        if (!file.type.startsWith('image/')) {
+            toast.error('Selecione uma imagem válida');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = async (ev) => {
+            const base64 = ev.target.result;
+            try {
+                await api.saveGoalPhoto(base64);
+                setGoalPhoto(base64);
+                toast.success('Foto objetivo salva!');
+            } catch (err) {
+                toast.error('Erro ao salvar foto');
+            }
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const handleRemoveGoalPhoto = async () => {
+        if (!window.confirm('Remover foto objetivo?')) return;
+        try {
+            await api.saveGoalPhoto(null);
+            setGoalPhoto(null);
+            toast.success('Foto objetivo removida');
+        } catch (err) {
+            toast.error('Erro ao remover foto');
+        }
+    };
 
     const handleLogout = () => {
         if (window.confirm('Deseja realmente sair da sua conta?')) {
@@ -72,6 +126,78 @@ const ProfileView = ({ stats, onLogout }) => {
                 </div>
             </div>
 
+            {/* Goal Photo Section */}
+            <div className="px-4 mb-6">
+                <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3 ml-1">
+                    Meu Objetivo
+                </h3>
+
+                {!loadingPhoto && (
+                    <div className="bg-surface/30 border border-white/5 rounded-2xl overflow-hidden">
+                        {goalPhoto ? (
+                            <div className="relative">
+                                {/* Preview Thumbnail */}
+                                <button
+                                    onClick={() => setShowGoalPhoto(true)}
+                                    className="w-full flex items-center gap-4 p-4 hover:bg-white/5 transition-colors"
+                                >
+                                    <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 ring-2 ring-primary/30">
+                                        <img
+                                            src={goalPhoto}
+                                            alt="Objetivo"
+                                            className="w-full h-full object-cover"
+                                        />
+                                    </div>
+                                    <div className="flex-1 text-left">
+                                        <p className="text-white font-semibold text-sm">Foto Objetivo</p>
+                                        <p className="text-zinc-400 text-xs mt-0.5">Toque para ver em tela cheia</p>
+                                    </div>
+                                    <Target className="text-primary flex-shrink-0" size={20} />
+                                </button>
+
+                                {/* Actions */}
+                                <div className="flex gap-2 px-4 pb-4">
+                                    <button
+                                        onClick={() => fileInputRef.current?.click()}
+                                        className="flex-1 py-2 rounded-xl bg-primary/10 text-primary text-xs font-bold border border-primary/20 flex items-center justify-center gap-1.5"
+                                    >
+                                        <Camera size={14} />
+                                        Trocar foto
+                                    </button>
+                                    <button
+                                        onClick={handleRemoveGoalPhoto}
+                                        className="py-2 px-4 rounded-xl bg-red-500/10 text-red-400 text-xs font-bold border border-red-500/20"
+                                    >
+                                        <X size={14} />
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <button
+                                onClick={() => fileInputRef.current?.click()}
+                                className="w-full flex flex-col items-center justify-center py-8 gap-3 hover:bg-white/5 transition-colors"
+                            >
+                                <div className="w-16 h-16 rounded-2xl bg-primary/10 border-2 border-dashed border-primary/30 flex items-center justify-center">
+                                    <Target className="text-primary" size={28} />
+                                </div>
+                                <div className="text-center">
+                                    <p className="text-white/70 font-semibold text-sm">Adicionar foto objetivo</p>
+                                    <p className="text-zinc-500 text-xs mt-0.5">Sua inspiração para treinar</p>
+                                </div>
+                            </button>
+                        )}
+                    </div>
+                )}
+
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleGoalPhotoUpload}
+                />
+            </div>
+
             {/* Menu Sections */}
             <div className="space-y-6 px-4">
                 {profileSections.map((section) => (
@@ -112,6 +238,42 @@ const ProfileView = ({ stats, onLogout }) => {
                     <span>Sair da Conta</span>
                 </motion.button>
             </div>
+
+            {/* Full-screen goal photo viewer */}
+            <AnimatePresence>
+                {showGoalPhoto && goalPhoto && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/95 z-[300] flex flex-col items-center justify-center"
+                        onClick={() => setShowGoalPhoto(false)}
+                    >
+                        <div className="absolute top-12 right-4">
+                            <button
+                                onClick={() => setShowGoalPhoto(false)}
+                                className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="absolute top-12 left-4">
+                            <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-primary/20 border border-primary/30">
+                                <Target size={16} className="text-primary" />
+                                <span className="text-primary text-sm font-bold">Meu Objetivo</span>
+                            </div>
+                        </div>
+                        <motion.img
+                            initial={{ scale: 0.9 }}
+                            animate={{ scale: 1 }}
+                            src={goalPhoto}
+                            alt="Objetivo"
+                            className="max-w-full max-h-full object-contain rounded-2xl"
+                            onClick={(e) => e.stopPropagation()}
+                        />
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

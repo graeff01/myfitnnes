@@ -121,6 +121,18 @@ async function runMigrations() {
     } catch (err) {
         console.error('Failed to migrate settings:', err.message);
     }
+
+    // Goal photo migration in settings
+    try {
+        const columns = await allAsync('PRAGMA table_info(settings)');
+        const hasGoalPhoto = columns.some(col => col.name === 'goal_photo');
+        if (columns.length > 0 && !hasGoalPhoto) {
+            await runAsync('ALTER TABLE settings ADD COLUMN goal_photo TEXT');
+            console.log('✅ Settings table migrated (goal_photo added).');
+        }
+    } catch (err) {
+        console.error('Failed to migrate settings (goal_photo):', err.message);
+    }
 }
 
 // Helper to promisify database operations

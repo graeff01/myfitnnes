@@ -15,11 +15,15 @@ const workoutsRouter = require('./routes/workouts');
 const metricsRouter = require('./routes/metrics');
 const hydrationRouter = require('./routes/hydration');
 const authRouter = require('./routes/auth');
+const plansRouter = require('./routes/plans');
+const supplementsRouter = require('./routes/supplements');
 
 app.use('/api/workouts', workoutsRouter);
 app.use('/api/metrics', metricsRouter);
 app.use('/api/hydration', hydrationRouter);
 app.use('/api/auth', authRouter);
+app.use('/api/plans', plansRouter);
+app.use('/api/supplements', supplementsRouter);
 
 // Health check
 app.get('/api/health', (req, res) => {

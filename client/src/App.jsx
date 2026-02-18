@@ -6,8 +6,10 @@ import * as api from './services/api';
 import Header from './components/Header';
 import ActivityRings from './components/ActivityRings';
 import HydrationCard from './components/HydrationCard';
-import StatsCard from './components/StatsCard'; // Added
+import SupplementCard from './components/SupplementCard';
+import StatsCard from './components/StatsCard';
 import WorkoutModal from './components/WorkoutModal';
+import WorkoutPlanSection from './components/WorkoutPlanSection';
 import BottomNav from './components/BottomNav';
 import WorkoutSection from './components/WorkoutSection';
 import ProgressView from './components/ProgressView';
@@ -17,6 +19,7 @@ import ProfileView from './components/ProfileView';
 
 function App() {
   const [activeTab, setActiveTab] = useState('home');
+  const [workoutsSubTab, setWorkoutsSubTab] = useState('plano'); // 'plano' | 'registro'
   const [workouts, setWorkouts] = useState([]);
   const [showWorkoutModal, setShowWorkoutModal] = useState(false);
   const [selectedWorkout, setSelectedWorkout] = useState(null);
@@ -34,9 +37,9 @@ function App() {
     try {
       setLoading(true);
       const [workoutsData, statsData, weightData] = await Promise.all([
-        api.getWorkouts(), // Fixed API name
+        api.getWorkouts(),
         api.getWeeklyStats(),
-        api.getWeightLogs(null, null, 14) // Last 14 logs for trend
+        api.getWeightLogs(null, null, 14)
       ]);
       setWorkouts(workoutsData);
       setWeeklyStats(statsData);
@@ -64,10 +67,9 @@ function App() {
 
     // 1. Weekly Progress
     const startOfWeek = new Date(now);
-    startOfWeek.setDate(now.getDate() - now.getDay()); // Start Sunday
+    startOfWeek.setDate(now.getDate() - now.getDay());
     startOfWeek.setHours(0, 0, 0, 0);
 
-    // Unique days trained this week
     const uniqueDaysWeek = new Set(workouts
       .filter(w => {
         const wDate = new Date(w.date + 'T00:00:00');
@@ -99,13 +101,11 @@ function App() {
       const nowObj = new Date(today + 'T00:00:00');
       const diffHours = (nowObj - currentDate) / (1000 * 60 * 60);
 
-      // If last workout was today or yesterday, streak is active
       if (diffHours < 48) {
         streak = 1;
         let previousDate = new Date(currentDate);
         previousDate.setDate(previousDate.getDate() - 1);
 
-        // Check backwards
         for (let i = 1; i < sortedDates.length; i++) {
           const dStr = sortedDates[i];
           const pStr = api.formatDate(previousDate);
@@ -114,7 +114,7 @@ function App() {
             streak++;
             previousDate.setDate(previousDate.getDate() - 1);
           } else if (dStr > pStr) {
-            continue; // Should not happen with sorted set
+            continue;
           } else {
             break;
           }
@@ -138,7 +138,6 @@ function App() {
     const allMuscleGroups = ['peito', 'costas', 'pernas', 'ombros', 'biceps', 'triceps', 'abdomen', 'cardio', 'alongamento'];
     const muscleLastTrained = {};
 
-    // Initialize with far past
     allMuscleGroups.forEach(g => muscleLastTrained[g] = new Date('2000-01-01'));
 
     workouts.forEach(w => {
@@ -237,6 +236,10 @@ function App() {
     setShowWorkoutModal(true);
   };
 
+  const handlePlanWorkoutLogged = () => {
+    setRefreshKey(prev => prev + 1);
+  };
+
   if (!isAuthenticated) {
     return (
       <>
@@ -269,7 +272,7 @@ function App() {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.98 }}
               transition={{ duration: 0.2 }}
-              className="flex-1 flex flex-col justify-start gap-1 p-2 pb-24 overflow-hidden h-full"
+              className="flex-1 flex flex-col justify-start gap-2 p-2 pb-24 overflow-y-auto scrollbar-hide"
             >
               <div className="flex-none pt-2">
                 <ActivityRings
@@ -289,8 +292,10 @@ function App() {
                 />
               </div>
 
-              <div className="flex-1 min-h-0 px-1 overflow-hidden">
+              {/* Nutrition/Supplement row */}
+              <div className="px-1 grid grid-cols-1 gap-2">
                 <HydrationCard />
+                <SupplementCard />
               </div>
             </motion.div>
           )}
@@ -304,27 +309,74 @@ function App() {
               transition={{ duration: 0.2 }}
               className="flex-1 flex flex-col overflow-hidden p-4"
             >
-              <div className="flex-1 flex flex-col overflow-hidden mt-2">
-                <WorkoutSection
-                  workouts={workouts}
-                  weeklyStats={weeklyStats}
-                  onEditWorkout={handleEditWorkout}
-                  onDeleteWorkout={handleDeleteWorkout}
-                  recommendation={stats.recommendation} // Added
-                />
+              {/* Sub-tab toggle: Plano vs Registro */}
+              <div className="flex bg-surface-light p-1 rounded-xl mb-4 flex-none">
+                {[
+                  { key: 'plano', label: '📋 Meu Plano' },
+                  { key: 'registro', label: '📊 Histórico' },
+                ].map(tab => (
+                  <button
+                    key={tab.key}
+                    onClick={() => setWorkoutsSubTab(tab.key)}
+                    className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${
+                      workoutsSubTab === tab.key
+                        ? 'bg-surface text-white shadow-lg'
+                        : 'text-text-secondary hover:text-white'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
               </div>
 
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => {
-                  setSelectedWorkout(null);
-                  setShowWorkoutModal(true);
-                }}
-                className="fixed bottom-24 right-6 w-14 h-14 bg-primary rounded-full shadow-lg shadow-primary/30 flex items-center justify-center text-2xl z-40 border border-white/20"
-              >
-                ➕
-              </motion.button>
+              <AnimatePresence mode="wait">
+                {workoutsSubTab === 'plano' && (
+                  <motion.div
+                    key="plano"
+                    initial={{ opacity: 0, x: -15 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 15 }}
+                    transition={{ duration: 0.15 }}
+                    className="flex-1 overflow-y-auto scrollbar-hide"
+                  >
+                    <WorkoutPlanSection onWorkoutLogged={handlePlanWorkoutLogged} />
+                  </motion.div>
+                )}
+
+                {workoutsSubTab === 'registro' && (
+                  <motion.div
+                    key="registro"
+                    initial={{ opacity: 0, x: 15 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -15 }}
+                    transition={{ duration: 0.15 }}
+                    className="flex-1 flex flex-col overflow-hidden"
+                  >
+                    <WorkoutSection
+                      workouts={workouts}
+                      weeklyStats={weeklyStats}
+                      onEditWorkout={handleEditWorkout}
+                      onDeleteWorkout={handleDeleteWorkout}
+                      recommendation={stats.recommendation}
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* FAB - only shown in Registro tab */}
+              {workoutsSubTab === 'registro' && (
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => {
+                    setSelectedWorkout(null);
+                    setShowWorkoutModal(true);
+                  }}
+                  className="fixed bottom-24 right-6 w-14 h-14 bg-primary rounded-full shadow-lg shadow-primary/30 flex items-center justify-center text-2xl z-40 border border-white/20"
+                >
+                  ➕
+                </motion.button>
+              )}
             </motion.div>
           )}
 
@@ -356,7 +408,7 @@ function App() {
                 stats={{
                   totalWorkouts: workouts.length,
                   streak: stats.streak,
-                  monthlyGoals: stats.weeklyPct >= 100 ? 1 : 0 // Simplified for now
+                  monthlyGoals: stats.weeklyPct >= 100 ? 1 : 0
                 }}
                 onLogout={() => setIsAuthenticated(false)}
               />
@@ -376,7 +428,7 @@ function App() {
           initialData={selectedWorkout}
         />
       </div>
-    </div >
+    </div>
   );
 }
 
